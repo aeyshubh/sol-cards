@@ -1,0 +1,9 @@
+ // In the example, we use 6 decimals for USDC, but you can use any SPL token
+  //const mintAddress = new PublicKey("SOLANA_MAINNET_USDC_PUBKEY"); // replace this with any SPL token mint address
+
+  // converting value to fractional units
+
+
+
+/*   
+ */
