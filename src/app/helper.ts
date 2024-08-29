@@ -7,6 +7,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { playDealerGame, playUserGame } from "@/app/cards";
+import {getDealerCard,getUserCard,determineWinner} from "@/app/game1";
 const SEND_PUBKEY = 'SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa';
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
 export const getGame = (): NextActionLink => {
@@ -55,7 +56,7 @@ export const getGame = (): NextActionLink => {
               href: `/api/game?sendAmt={sendNum}&game=2`, // api endpoint
               parameters: [
                 {
-                  name: "sendNum", // field name
+                  name: "sendNum", // field 
                   label: "Enter SEND Amount", // text input placeholder
                 },
               ],
@@ -66,21 +67,21 @@ export const getGame = (): NextActionLink => {
     };
   }
 
-  export const raiseSend = (userPower): NextActionLink => {
+  export const raiseSend = (type,card,value,amount): NextActionLink => {
     console.log("IN get Game");
     return {
       type: "inline",
       action: {
         description: `You'll always miss 100% of the shots you don't take.`,
         icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
-        label: `Enter Send to Raise Bet with`,
+        label: `Enter Send to Raise Bet with, your current card is ${card}`,
         title: `Only a CHAD can raise the bet`,
         type: "action",
         links: {
           actions: [
             {
               label: `Bet`, // button text
-              href: `/api/game?send={sendNum}&type=raise&user=${userPower}`, // api endpoint
+              href: `/api/game?send={sendNum}&typeRaise=raise&card=${card}&type=${type}&value=${value}&amount=${amount}`, // api endpoint
               parameters: [
                 {
                   name: "sendNum", // field name
@@ -94,9 +95,7 @@ export const getGame = (): NextActionLink => {
     };
   }
 
-  export const raiseSendForSecondGame = (): NextActionLink => {
-    let userPower = playUserGame();
-    let userPowerValue = userPower.value;
+  export const raiseSendForSecondGame = (value,card,amount): NextActionLink => {
     console.log("IN get Game");
     return {
       type: "inline",
@@ -104,13 +103,13 @@ export const getGame = (): NextActionLink => {
         description: `You'll always miss 100% of the shots you don't take.`,
         icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
         label: `Enter Send to Raise Bet with`,
-        title: `Only a CHAD can raise the bet`,
+        title: `Your current cards are ${card}`,
         type: "action",
         links: {
           actions: [
             {
               label: `Bet`, // button text
-              href: `/api/game?send={sendNum}&type=raise&user=${userPowerValue}&game=2`, // api endpoint
+              href: `/api/game?send={sendNum}&typeRaise=raise&card=${card}&gameNo=2&value=${value}&amount=${amount}`, // api endpoint
               parameters: [
                 {
                   name: "sendNum", // field name
@@ -194,24 +193,26 @@ export const getGame = (): NextActionLink => {
       return transaction;
   }
 
-    export const startGame = (): NextActionLink => {
+    export const startGame = (amount): NextActionLink => {
+      let userCard = getUserCard();
+      
         return {
         type: "inline",
         action: {
             description: `You can select whether you want to bet on High card/Low card. If you bet on High card and you have a higher card then deler then you win.`,
             icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
-            label: `Following are your cards`,
-            title: `Have a look on your cards`,
+            label: ``,
+            title: `You got ${userCard?.card}`,
             type: "action",
             links: {
             actions: [
                 {
                 label: `High`, // button text
-                href: `/api/game?card=high`, // api endpoint
+                href: `/api/game?type=high&card=${userCard.card}&value=${userCard.value}&amount=${amount}`, // api endpoint
                 },
                 {
                     label: `Low`, // button text
-                    href: `/api/game?card=low`, // api endpoint
+                    href: `/api/game?type=low&card=${userCard.card}&value=${userCard.value}&amount=${amount}`, // api endpoint
                     },
             ],
             },
@@ -219,24 +220,24 @@ export const getGame = (): NextActionLink => {
         };
     }
 
-    export const startGame2 = (value): NextActionLink => {
+    export const startGame2 = (cards,value,amount): NextActionLink => {
       return {
       type: "inline",
       action: {
           description: `You get 3 cards and dealer gets 3 cards,whosover's card is nearest to 21 wins,above 21 busts.`,
           icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
           label: `Following are your cards`,
-          title: `Have a look on your cards`,
+          title: `You have ${cards} (value : ${value})`,
           type: "action",
           links: {
             actions: [
               {
               label: `Raise`, // button text
-              href: `/api/game?bet=raise&userPower=${value}&gameNo=2`, // api endpoint
+              href: `/api/game?bet=raise&value=${value}&gameNo=2&card=${cards}&amount=${amount}`, // api endpoint
               },
               {
                   label: `No raise`, // button text
-                  href: `/api/game?bet=noraise&userPower=${value}&gameNo=2`, // api endpoint
+                  href: `/api/game?bet=noraise&value=${value}&gameNo=2&card=${cards}&amount=${amount}`, // api endpoint
                   },
           ],
           },
@@ -244,24 +245,24 @@ export const getGame = (): NextActionLink => {
       };
   }
 
-export const  raise = (num:Number): NextActionLink => {
+export const  raise = (type,card,value,amount): NextActionLink => {
     return {
     type: "inline",
     action: {
         description: `You can raise your bet or continue with older bet`,
         icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
         label: `Raise/continue`,
-        title: `Raise your bet or continue`,
+        title: `Raise your bet or continue,your current card is ${card}`,
         type: "action",
         links: {
         actions: [
             {
             label: `Raise`, // button text
-            href: `/api/game?bet=raise&user=${num}`, // api endpoint
+            href: `/api/game?bet=raise&card=${card}&type=${type}&value=${value}&amount=${amount}`, // api endpoint
             },
             {
                 label: `No raise`, // button text
-                href: `/api/game?bet=noraise&user=${num}`, // api endpoint
+                href: `/api/game?bet=noraise&card=${card}&type=${type}&value=${value}&amount=${amount}`, // api endpoint
                 },
         ],
         },
@@ -269,52 +270,63 @@ export const  raise = (num:Number): NextActionLink => {
     };
 }
 
-export const endGame = (userPower): NextActionLink => {
-const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K','A'];
-
-    let dealerCard = generateRandomCard();
-    let dealerPower= values.indexOf(dealerCard)+1;
-    let userWinStatus = false;
-    if(userPower > dealerPower){
-        userWinStatus = true;
-    }else{
-        userWinStatus = false;
-    }
-    if(userWinStatus){
+export const endGame = (type,card,value,amount): NextActionLink => {
+ 
+//Change wining status acc to high or low
+    let dealerCard = getDealerCard();
+    console.log("Dealer Card",dealerCard);
+    let userWinStatus = determineWinner(value,dealerCard,type);
+    console.log("User Win Status",userWinStatus);
+    console.log("Users card :",card,"dealer card :",dealerCard);  
+    console.log(`Users Amount is ${amount}`);
+    if(userWinStatus == 1){
         return {
             type: "inline",
             action: {
               description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
               icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
-              label: `Congratulations,You Won,Dealer had ${dealerCard}♦`,
-              title: `Your payout will automatically be sent to your account in 5 minutes`,
+              label: `Congratulations,You Won`,
+              title: `Dealer had ${dealerCard},Your payout will automatically be sent to your account in 5 minutes`,
               type: "completed",
             },
           };
-  }else{
+  }else if(userWinStatus == 2){
     return {
         type: "inline",
         action: {
           description: `The only sure thing about luck is that it will change.`,
           icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
-          label: `Sorry,You Lost,Dealer card is ${dealerCard}♦`,
-          title: `Wanna play again?`,
+          label: `Sorry,You Lost`,
+          title: `Dealer has ${dealerCard} , Wanna play again?`,
           type: "completed",
         },
       };
+  }else{
+    return {
+      type: "inline",
+      action: {
+        description: `Wow,It's a TIE,we will send your bet back to your account`,
+        icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
+        label: `It's a TIE`,
+        title: `both have ${card},Wanna play again?`,
+        type: "completed",
+      },
+    };
   }
 }
 
-export const endSecondGame = (userPower): NextActionLink => {
+export const endSecondGame = (value,card,amount): NextActionLink => {
   
   let dealer = playDealerGame();
-  let playerValue = userPower;
+  let playerValue = value;
   let dealerValue = dealer.value;
   let userWinStatus = false;
   let cardStatus;
+  console.log(`Players Amount : ${amount}`);
+  console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
   let status =0;
       if (playerValue > 21 && dealerValue > 21) {
-        cardStatus = "Both bust! It's a tie.";
+        cardStatus = "Both bust";
         //return Payment
         status = 1;
       } else if (playerValue > 21) {
@@ -333,7 +345,7 @@ export const endSecondGame = (userPower): NextActionLink => {
         cardStatus = "Dealer wins!";
         //Exit
       } else {
-        cardStatus = "It's a tie!";
+        cardStatus = "Both Busts";
         //Return Payment
         status = 1;
       }
@@ -341,9 +353,9 @@ export const endSecondGame = (userPower): NextActionLink => {
         return {
           type: "inline",
           action: {
-            description: `It's a TIE...,we will send your bet back to your account`,
+            description: `Both Bust`,
             icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
-            label: `It's a Tie,${cardStatus}`,
+            label: `It's a bust`,
             title: `Your payout will automatically be sent to your account in 5 minutes`,
             type: "completed",
           },
@@ -354,8 +366,8 @@ export const endSecondGame = (userPower): NextActionLink => {
               action: {
                 description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
                 icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
-                label: `Congratulations,${cardStatus},Dealer had value : ${dealerValue}♦`,
-                title: `Your payout will automatically be sent to your account in 5 minutes`,
+                label: `Congratulations,${cardStatus}`,
+                title: `Dealer had ${dealer.cards} (value: ${dealerValue}),Your payout will automatically be sent to your account`,
                 type: "completed",
               },
             };
@@ -365,19 +377,15 @@ export const endSecondGame = (userPower): NextActionLink => {
           action: {
             description: `The only sure thing about luck is that it will change.`,
             icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
-            label: `Sorry,You Lost,${cardStatus},Dealer's Value is ${dealerValue}♦`,
-            title: `Wanna play again?`,
+            label: `Sorry,You Lost`,
+            title: `Dealer had : ${dealer.cards} (value:${dealer.value}), Wanna play again?`,
             type: "completed",
           },
         };
     }
   }
     // Function to generate a random card
-export function generateRandomCard(): string {
-  const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-    const randomValue = values[Math.floor(Math.random() * values.length)];
-    return `${randomValue}`;
-  }
+
 
   
   
