@@ -11,6 +11,7 @@
   "dependencies": {
     "@solana/actions": "^1.6.2",
     "@solana/spl-token": "^0.4.8",
+    "@vercel/og": "^0.6.2",
     "blinksights-sdk": "^1.0.8",
     "dotenv": "^16.4.5",
     "next": "14.2.5",
