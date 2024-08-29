@@ -25,8 +25,9 @@ import {
   } from "@solana/web3.js";
   import { NextActionLink } from "@solana/actions-spec";
   import "dotenv/config";
-  import {getGame,startGame,TransactionBuilder,generateRandomCard, endGame,raise,raiseSend,getGame2,startGame2,raiseSendForSecondGame, endSecondGame} from "@/app/helper";
+  import {getGame,startGame,TransactionBuilder, endGame,raise,raiseSend,getGame2,startGame2,raiseSendForSecondGame, endSecondGame} from "@/app/helper";
   import {playUserGame} from "@/app/cards";
+  import {getUserCard} from "@/app/game1";
 import { send } from "process";
 //const client = new BlinksightsClient(process.env.METKEY);
 
@@ -57,11 +58,15 @@ export async function GET(request: Request) {
             actions: [
                 {
                 label: `Submit`, // button text
-                href: `/api/game?gameNo={num}`, // api endpoint
+                href: `/api/game?gameNo={num}&amount={amt}`, // api endpoint
                 parameters: [
                   {
                     name: "num", // field name
-                    label: "Enter the Game Number", // text input placeholder
+                    label: "Enter Game Number", // text input placeholder
+                  },
+                  {
+                    name: "amt", // field name
+                    label: "SEND Amount", // text input placeholder
                   },
                 ],
               },
@@ -97,56 +102,18 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
     );
     tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
     tx.feePayer = sender;
-    if(request.url.includes("gameNo") && !request.url.includes("bet")){
+    if(request.url.includes("gameNo") && !request.url.includes("bet") && !request.url.includes("typeRaise")){
       let gameNo = requestUrl.searchParams.get("gameNo");
+      let amount = requestUrl.searchParams.get("amount");
+      let txr = await TransactionBuilder(sender,amount);
+    
       if(gameNo == "1"){
-        const payload: ActionPostResponse = await createPostResponse({
-            fields: {
-              links: {
-                next: getGame(),
-              },
-              transaction: tx,
-              message: `Gettting Send`,
-            },
-            // note: no additional signers are needed
-            // signers: [],
-          });
-          const res = Response.json(payload, {
-            headers: ACTIONS_CORS_HEADERS,
-          });
-          return res;
-        }else{
           const payload: ActionPostResponse = await createPostResponse({
             fields: {
               links: {
-                next: getGame2(),
+                next: startGame(amount),
               },
               transaction: tx,
-              message: `Gettting 2nd Game`,
-            },
-            // note: no additional signers are needed
-            // signers: [],
-          });
-          const res = Response.json(payload, {
-            headers: ACTIONS_CORS_HEADERS,
-          });
-          return res;
-        }
-    } else if(request.url.includes("sendAmt")){
-        //get send from user
-        console.log("URzl:",request.url.includes("sendAmt"))
-        let gameNo = requestUrl.searchParams.get("game");
-        let amount = Number(requestUrl.searchParams.get("sendAmt"));
-        console.log("Sender is "+sender+" and amount is "+amount);
-        if(gameNo == "2"){
-          let usersCard = playUserGame();
-          console.log("Users Card",usersCard.cards,"User Power",usersCard.value);
-          const payload: ActionPostResponse = await createPostResponse({
-            fields: {
-              links: {
-                next: startGame2(usersCard.value),
-              },
-              transaction: txr,
               message: `Sending Send`,
             },
             // note: no additional signers are needed
@@ -157,13 +124,16 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
           });
           return res;
         }else{
-        let txr = await TransactionBuilder(sender,amount);
+          let txr = await TransactionBuilder(sender,amount);
+        let usersCard = playUserGame();
+        console.log("Users Card",usersCard.cards,"User Power",usersCard.value);
+          
         const payload: ActionPostResponse = await createPostResponse({
             fields: {
               links: {
-                next: startGame(),
+                next: startGame2(usersCard.cards,usersCard.value,amount),
               },
-              transaction: txr,
+              transaction: tx,
               message: `Sending Send`,
             },
             // note: no additional signers are needed
@@ -174,19 +144,17 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
           });
           return res;
         }
-    }
-    //game 1
-    else if (request.url.includes("card")) {
+      }  
+    else if (request.url.includes("type") &&request.url.includes("card")&&request.url.includes("value") && !request.url.includes("bet")&& !request.url.includes("typeRaise")) {
         //Generate card
-        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K','A'];
-        let userCard = generateRandomCard();
-        let userPower = values.indexOf(userCard)+1;
-       
-        
+        let type = (requestUrl.searchParams.get("type"));
+        let getcard = (requestUrl.searchParams.get("card"));
+        let getValue = (requestUrl.searchParams.get("value"));
+        let amount = requestUrl.searchParams.get("amount");
         const payload: ActionPostResponse = await createPostResponse({
             fields: {
               links: {
-                next: raise(userPower),
+                next: raise(type,getcard,getValue,amount),
               },
               transaction: tx,
               message: `Raise`,
@@ -200,14 +168,17 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
           return res;
     }
     //Game 1
-    else if(request.url.includes("bet") && !request.url.includes("userPower")){
+    else if(request.url.includes("bet") && request.url.includes("card") && request.url.includes("type") && request.url.includes("value") ){
         let bet = requestUrl.searchParams.get("bet");
-        let userPower = requestUrl.searchParams.get("user");
+        let type = (requestUrl.searchParams.get("type"));
+        let getcard = (requestUrl.searchParams.get("card"));
+        let getValue = (requestUrl.searchParams.get("value"));
+        let amount = requestUrl.searchParams.get("amount");
         if(bet == "raise"){
             const payload: ActionPostResponse = await createPostResponse({
                 fields: {
                   links: {
-                    next: raiseSend(userPower),
+                    next: raiseSend(type,getcard,getValue,amount),
                   },
                   transaction: tx,
                   message: `Bet`,
@@ -223,7 +194,7 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
             const payload: ActionPostResponse = await createPostResponse({
                 fields: {
                   links: {
-                    next: endGame(userPower),
+                    next: endGame(type,getcard,getValue,amount),
                   },
                   transaction: tx,
                   message: `Bet`,
@@ -239,14 +210,16 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
        
 
     }
-    else if(request.url.includes("bet") && request.url.includes("userPower") && request.url.includes("game")){
+    else if(request.url.includes("bet") && request.url.includes("value") && request.url.includes("gameNo") && request.url.includes("card")){
       let bet = requestUrl.searchParams.get("bet");
-      let userPower = requestUrl.searchParams.get("userPower");
+      let value = requestUrl.searchParams.get("value");
+      let card = requestUrl.searchParams.get("card");
+      let amount = requestUrl.searchParams.get("amount");
       if(bet == "raise"){
           const payload: ActionPostResponse = await createPostResponse({
               fields: {
                 links: {
-                  next: raiseSendForSecondGame(),
+                  next: raiseSendForSecondGame(value,card,amount),
                 },
                 transaction: tx,
                 message: `Bet`,
@@ -262,7 +235,7 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
           const payload: ActionPostResponse = await createPostResponse({
               fields: {
                 links: {
-                  next: endSecondGame(userPower),
+                  next: endSecondGame(value,card,amount),
                 },
                 transaction: tx,
                 message: `Bet`,
@@ -277,17 +250,19 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
       }
      
 
-  }else if(request.url.includes("game") && request.url.includes("type")){
+  }else if(request.url.includes("send") && request.url.includes("typeRaise") && request.url.includes("gameNo") && request.url.includes("card") && request.url.includes("value")){
         //get send from user
-        let amount = requestUrl.searchParams.get("send");
-        let userPower = requestUrl.searchParams.get("user");
+        let amount = requestUrl.searchParams.get("send");//Raise Amount
+        let amountToSend = requestUrl.searchParams.get("amount"); // Old amount
+        let card = requestUrl.searchParams.get("card");
+        let value = requestUrl.searchParams.get("value");
         let txr = await TransactionBuilder(sender,amount);
         const payload: ActionPostResponse = await createPostResponse({
             fields: {
               links: {
-                next: endSecondGame(userPower),
+                next: endSecondGame(value,card,amountToSend),
               },
-              transaction: txr,
+              transaction: tx,
               message: `Raising Send`,
             },
             // note: no additional signers are needed
@@ -297,6 +272,27 @@ let connection = new Connection(clusterApiUrl("mainnet-beta"));
             headers: ACTIONS_CORS_HEADERS,
           });
           return res;
+    } else if(request.url.includes("typeRaise")){
+
+      let type = (requestUrl.searchParams.get("type"));
+      let getcard = (requestUrl.searchParams.get("card"));
+      let getValue = (requestUrl.searchParams.get("value"));
+      let amount = requestUrl.searchParams.get("amount");
+      const payload: ActionPostResponse = await createPostResponse({
+        fields: {
+          links: {
+            next: endGame(type,getcard,getValue,amount),
+          },
+          transaction: tx,
+          message: `Bet`,
+        },
+        // note: no additional signers are needed
+        // signers: [],
+      });
+      const res = Response.json(payload, {
+        headers: ACTIONS_CORS_HEADERS,
+      });
+      return res;
     }
 
   }
