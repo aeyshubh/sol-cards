@@ -237,7 +237,6 @@ export async function POST(request: Request) {
     request.url.includes("gameNo") &&
     request.url.includes("card")
   ) {
-    console.log("xxx", requestUrl.searchParams);
     let bet = requestUrl.searchParams.get("bet");
     let value = requestUrl.searchParams.get("value");
     let card = requestUrl.searchParams.get("card");
@@ -288,7 +287,6 @@ export async function POST(request: Request) {
     let amountToSend = requestUrl.searchParams.get("amount"); // Old amount
     let card = requestUrl.searchParams.get("card");
     let value = requestUrl.searchParams.get("value");
-    console.log("xxx", requestUrl.searchParams);
     let txr = await TransactionBuilder(sender, amount);
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
@@ -313,7 +311,7 @@ export async function POST(request: Request) {
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         links: {
-          next: endGame(type, getcard, getValue, amount),
+          next: endGame(request, type, getcard, getValue, amount),
         },
         transaction: tx,
         message: `Bet`,

@@ -317,7 +317,7 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
   //Change wining status acc to high or low
   let dealerCard = getDealerCard();
   console.log("Dealer Card", dealerCard);
-  let userWinStatus = determineWinner(value, dealerCard, type);
+  let userWinStatus = determineWinner(card, dealerCard, type);
   console.log("User Win Status", userWinStatus);
   console.log("Users card :", card, "dealer card :", dealerCard);
   console.log(`Users Amount is ${amount}`);

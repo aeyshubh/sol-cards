@@ -126,17 +126,45 @@ export function getUserCard() {
 }
 
 export function determineWinner(userCard, dealerCard, type) {
-  // Convert the card values inside the determineWinner function
+  console.log("xxx", userCard, dealerCard);
+
   const getCardNumericValue = (card) => {
     if (card.value === "Jack") return 11;
     if (card.value === "Queen") return 12;
     if (card.value === "King") return 13;
     if (card.value === "Ace") return 14;
-    return parseInt(card.value); // For values 2-10
+    return parseInt(card.value);
   };
 
-  const userCardValue = getCardNumericValue(userCard);
+  const getSuitValue = (suit) => {
+    switch (suit) {
+      case "Spades":
+        return 4;
+      case "Clubs":
+        return 3;
+      case "Diamonds":
+        return 2;
+      case "Hearts":
+        return 1;
+      default:
+        return 0;
+    }
+  };
+
+  let userCardValue, userCardSuit;
+  if (typeof userCard === "string") {
+    const [userValue, , userSuit] = userCard.split(" ");
+    userCardValue = getCardNumericValue({ value: userValue });
+    userCardSuit = userSuit;
+  } else {
+    userCardValue = getCardNumericValue(userCard);
+    userCardSuit = userCard.suit;
+  }
+
   const dealerCardValue = getCardNumericValue(dealerCard);
+  const dealerCardSuit = dealerCard.suit;
+
+  console.log("card values", userCardValue, dealerCardValue);
 
   if (type === "high") {
     if (userCardValue > dealerCardValue) {
@@ -146,8 +174,16 @@ export function determineWinner(userCard, dealerCard, type) {
       console.log("Dealer wins!");
       return 2;
     } else {
-      console.log("It's a tie!");
-      return 3;
+      // In case of tie, compare suits
+      const userSuitValue = getSuitValue(userCardSuit);
+      const dealerSuitValue = getSuitValue(dealerCardSuit);
+      if (userSuitValue > dealerSuitValue) {
+        console.log("You win by suit!");
+        return 1;
+      } else {
+        console.log("Dealer wins by suit!");
+        return 2;
+      }
     }
   } else if (type === "low") {
     if (userCardValue < dealerCardValue) {
@@ -157,8 +193,16 @@ export function determineWinner(userCard, dealerCard, type) {
       console.log("Dealer wins!");
       return 2;
     } else {
-      console.log("It's a tie!");
-      return 3;
+      // In case of tie, compare suits
+      const userSuitValue = getSuitValue(userCardSuit);
+      const dealerSuitValue = getSuitValue(dealerCardSuit);
+      if (userSuitValue > dealerSuitValue) {
+        console.log("You win by suit!");
+        return 1;
+      } else {
+        console.log("Dealer wins by suit!");
+        return 2;
+      }
     }
   } else {
     throw new Error(`Unknown game type: ${type}`);
@@ -205,23 +249,18 @@ export const getCardAbbreviation = (card) => {
 };
 
 export const getCardAbbreviationsFromUrl = (url) => {
-  // Extract the 'card' parameter from the URL
   const urlParams = new URLSearchParams(url.split("?")[1]);
   const cardsString = urlParams.get("card"); // e.g., "5 of Diamonds, 9 of Diamonds, 8 of Diamonds"
 
-  // Split the cards by comma and trim any extra spaces
   const cardsArray = cardsString.split(",").map((card) => card.trim());
 
-  // Helper function to convert a single card string to abbreviation
   const convertToAbbreviation = (cardString) => {
-    const [value, , suit] = cardString.split(" "); // Split by space, ignoring "of"
-    const card = new Card(value, suit); // Create a Card object
-    return getCardAbbreviation(card); // Get the abbreviation
+    const [value, , suit] = cardString.split(" ");
+    const card = new Card(value, suit);
+    return getCardAbbreviation(card);
   };
 
-  // Convert each card to its abbreviation
   const abbreviations = cardsArray.map(convertToAbbreviation);
 
-  // Join the abbreviations with a comma
   return abbreviations.join(", ");
 };
