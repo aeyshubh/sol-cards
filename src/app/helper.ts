@@ -374,7 +374,7 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
   }
 };
 
-export const endSecondGame = (value, card, amount): NextActionLink => {
+export const endSecondGame = (req, value, cards, amount): NextActionLink => {
   let dealer = playDealerGame();
   let playerValue = value;
   let dealerValue = dealer.value;
@@ -382,6 +382,14 @@ export const endSecondGame = (value, card, amount): NextActionLink => {
   let cardStatus;
   console.log(`Players Amount : ${amount}`);
   console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
+
+  const dealerCardsArray = dealer.cards.split(",").map((card) => card.trim()); // Convert the comma-separated string to an array
+  const abbreviatedDealerCards = dealerCardsArray
+    .map((card) => {
+      const [value, , suit] = card.split(" "); // Split by space, ignoring "of"
+      return getCardAbbreviation(new Card(value, suit)); // Get the abbreviation using the Card class and getCardAbbreviation function
+    })
+    .join(","); // Join the abbreviations into a comma-separated string without spaces
 
   let status = 0;
   if (playerValue > 21 && dealerValue > 21) {
@@ -407,12 +415,22 @@ export const endSecondGame = (value, card, amount): NextActionLink => {
     //Return Payment
     status = 1;
   }
+
+  const origin = req.headers.host
+    ? `http://${req.headers.host}`
+    : "http://localhost:3000";
+  const ogImageUrl = new URL(
+    `/api/end-og?dealer_card=${abbreviatedDealerCards}&user_card=${cards}`,
+    origin
+  ).toString();
+
   if (status == 1) {
     return {
       type: "inline",
       action: {
         description: `Both Bust`,
-        icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
+        icon: ogImageUrl,
+        // icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
         label: `It's a bust`,
         title: `Your payout will automatically be sent to your account in 5 minutes`,
         type: "completed",
@@ -423,7 +441,8 @@ export const endSecondGame = (value, card, amount): NextActionLink => {
       type: "inline",
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
-        icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
+        icon: ogImageUrl,
+        // icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
         label: `Congratulations,${cardStatus}`,
         title: `Dealer had ${dealer.cards} (value: ${dealerValue}),Your payout will automatically be sent to your account`,
         type: "completed",
@@ -434,7 +453,8 @@ export const endSecondGame = (value, card, amount): NextActionLink => {
       type: "inline",
       action: {
         description: `The only sure thing about luck is that it will change.`,
-        icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
+        icon: ogImageUrl,
+        // icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
         label: `Sorry,You Lost`,
         title: `Dealer had : ${dealer.cards} (value:${dealer.value}), Wanna play again?`,
         type: "completed",
