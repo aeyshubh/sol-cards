@@ -144,7 +144,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: startGame2(usersCard.cards, usersCard.value, amount),
+            next: startGame2(request, usersCard.cards, usersCard.value, amount),
           },
           transaction: tx,
           message: `Sending Send`,

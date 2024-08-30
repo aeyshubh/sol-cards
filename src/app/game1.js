@@ -203,3 +203,25 @@ export const getCardAbbreviation = (card) => {
   // Combine the value and suit abbreviations
   return `${valueAbbreviation}${suitAbbreviation}`;
 };
+
+export const getCardAbbreviationsFromUrl = (url) => {
+  // Extract the 'card' parameter from the URL
+  const urlParams = new URLSearchParams(url.split("?")[1]);
+  const cardsString = urlParams.get("card"); // e.g., "5 of Diamonds, 9 of Diamonds, 8 of Diamonds"
+
+  // Split the cards by comma and trim any extra spaces
+  const cardsArray = cardsString.split(",").map((card) => card.trim());
+
+  // Helper function to convert a single card string to abbreviation
+  const convertToAbbreviation = (cardString) => {
+    const [value, , suit] = cardString.split(" "); // Split by space, ignoring "of"
+    const card = new Card(value, suit); // Create a Card object
+    return getCardAbbreviation(card); // Get the abbreviation
+  };
+
+  // Convert each card to its abbreviation
+  const abbreviations = cardsArray.map(convertToAbbreviation);
+
+  // Join the abbreviations with a comma
+  return abbreviations.join(", ");
+};

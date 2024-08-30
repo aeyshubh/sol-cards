@@ -211,7 +211,7 @@ export const startGame = (req, amount: number): NextActionLink => {
 
   // Construct the full URL for the OG image
   const iconUrl = new URL(
-    `/api/og?card_face=${userCard.card_face}`,
+    `/api/og?cards=${userCard.card_face}`,
     origin
   ).toString();
 
@@ -239,12 +239,36 @@ export const startGame = (req, amount: number): NextActionLink => {
   };
 };
 
-export const startGame2 = (cards, value, amount): NextActionLink => {
+export const startGame2 = (req, cards, value, amount): NextActionLink => {
+  // Assuming cards is a comma-separated string like "5 of Diamonds, 9 of Diamonds, 8 of Diamonds"
+
+  // Convert each card in the string to its abbreviation
+  const cardsArray = cards.split(",").map((card: any) => card.trim()); // Convert the comma-separated string to an array
+  const abbreviatedCards = cardsArray
+    .map((card: any) => {
+      const [value, , suit] = card.split(" "); // Split by space, ignoring "of"
+      return getCardAbbreviation(new Card(value, suit)); // Get the abbreviation using the Card class and getCardAbbreviation function
+    })
+    .join(","); // Join the abbreviations into a comma-separated string without spaces
+
+  const origin = req.headers.host
+    ? `http://${req.headers.host}`
+    : "http://localhost:3000";
+
+  // Construct the full URL for the OG image
+  const ogImageUrl = new URL(
+    `/api/og?cards=${encodeURIComponent(abbreviatedCards)}`,
+    origin
+  ).toString();
+
+  console.log(abbreviatedCards); // Outputs: "5D,9D,8D"
+  console.log(ogImageUrl); // Outputs the constructed OG image URL
+
   return {
     type: "inline",
     action: {
-      description: `You get 3 cards and dealer gets 3 cards,whosover's card is nearest to 21 wins,above 21 busts.`,
-      icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
+      description: `You get 3 cards and the dealer gets 3 cards. Whosoever's cards are nearest to 21 wins. Above 21 busts.`,
+      icon: ogImageUrl, // Use the OG image URL in the icon field
       label: `Following are your cards`,
       title: `You have ${cards} (value : ${value})`,
       type: "action",
@@ -252,11 +276,11 @@ export const startGame2 = (cards, value, amount): NextActionLink => {
         actions: [
           {
             label: `Raise`, // button text
-            href: `/api/game?bet=raise&value=${value}&gameNo=2&card=${cards}&amount=${amount}`, // api endpoint
+            href: `/api/game?bet=raise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}`, // api endpoint
           },
           {
             label: `No raise`, // button text
-            href: `/api/game?bet=noraise&value=${value}&gameNo=2&card=${cards}&amount=${amount}`, // api endpoint
+            href: `/api/game?bet=noraise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}`, // api endpoint
           },
         ],
       },
@@ -358,6 +382,7 @@ export const endSecondGame = (value, card, amount): NextActionLink => {
   let cardStatus;
   console.log(`Players Amount : ${amount}`);
   console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
+
   let status = 0;
   if (playerValue > 21 && dealerValue > 21) {
     cardStatus = "Both bust";
