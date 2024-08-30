@@ -7,7 +7,12 @@ import {
   ACTIONS_CORS_HEADERS,
 } from "@solana/actions";
 import { BlinksightsClient } from "blinksights-sdk";
-import * as splToken from "@solana/spl-token";
+import {
+  createTransferInstruction,
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+  transfer,
+} from "@solana/spl-token";
 import {
   Connection,
   clusterApiUrl,
@@ -39,6 +44,7 @@ import {
 import { playUserGame } from "@/app/cards";
 import { getUserCard } from "@/app/game1";
 import { send } from "process";
+import { base58ToKeypair, transferSplTx } from "@/app/utils";
 //const client = new BlinksightsClient(process.env.METKEY);
 
 export async function GET(request: Request) {
@@ -100,15 +106,22 @@ export const OPTIONS = GET; // OPTIONS request handler
 export async function POST(request: Request) {
   const body: ActionPostRequest = await request.json();
   //  client.trackActionV1(request.headers, body.account, request.url);
-  let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
+  let squadsPubKey = new PublicKey(
+    "3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5"
+  );
   let connection = new Connection(clusterApiUrl("mainnet-beta"));
 
   const requestUrl = new URL(request.url);
   let sender: PublicKey = new PublicKey(body.account);
+
+  const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+
+  const payer = base58ToKeypair(privateKeyBase58);
+
   const tx = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey: sender,
-      toPubkey: toPubkey,
+      toPubkey: squadsPubKey,
       lamports: LAMPORTS_PER_SOL * 0,
     })
   );
@@ -121,16 +134,23 @@ export async function POST(request: Request) {
   ) {
     let gameNo = requestUrl.searchParams.get("gameNo");
     let amount = requestUrl.searchParams.get("amount");
-    let txr = await TransactionBuilder(sender, amount);
+    // let txr = await TransactionBuilder(sender, amount);
     //@todo: arpita add liquidity check here
     if (gameNo == "1") {
-      //@todo:arpita send send to squads
+      const transaction = await transferSplTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(amount),
+      });
+
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
             next: startGame(request, amount),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Sending Send`,
         },
         // note: no additional signers are needed
@@ -141,8 +161,13 @@ export async function POST(request: Request) {
       });
       return res;
     } else {
-      //@todo:arpita send send to squads
-      let txr = await TransactionBuilder(sender, amount);
+      const transaction = await transferSplTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(amount),
+      });
       let usersCard = playUserGame();
       console.log("Users Card", usersCard.cards, "User Power", usersCard.value);
 
@@ -151,7 +176,7 @@ export async function POST(request: Request) {
           links: {
             next: startGame2(request, usersCard.cards, usersCard.value, amount),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Sending Send`,
         },
         // note: no additional signers are needed
@@ -203,13 +228,19 @@ export async function POST(request: Request) {
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
     if (bet == "raise") {
-      //@todo: arpita send send to squads
+      const transaction = await transferSplTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(amount),
+      });
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
             next: raiseSend(type, getcard, getValue, amount),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Bet`,
         },
         // note: no additional signers are needed
@@ -248,13 +279,19 @@ export async function POST(request: Request) {
     let amount = requestUrl.searchParams.get("amount");
     let usersCard = requestUrl.searchParams.get("userCard");
     if (bet == "raise") {
-      //@todo: arpita send send to squads
+      const transaction = await transferSplTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(amount),
+      });
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
             next: raiseSendForSecondGame(value, card, amount),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Bet`,
         },
         // note: no additional signers are needed
