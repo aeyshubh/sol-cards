@@ -43,11 +43,13 @@ import { send } from "process";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  console.log("URL", url);
+  const localIconPath = "/images/poker-table2.png";
   let balance = 10;
+  //@todo:fetch squads send balance
+  //also compare the bet*2 money is there in squads
   if (balance == 0) {
     const payload: ActionGetResponse = {
-      icon: "https://ucarecdn.com/d7f1119a-05dd-495e-bd88-6bb0cf4226a7/Screenshot20240826at23545AM.png", // Local icon path
+      icon: new URL(localIconPath, url.origin).toString(), // Local icon path
       label: "Liquidity Issue",
       title: `Less liquidity in the Pool`,
       description: `Available Liquidity is ${balance} USDC which is less than the required to payout if you win!`,
@@ -60,7 +62,8 @@ export async function GET(request: Request) {
   } else {
     const payload: ActionGetResponse = {
       description: `You'll always miss 100% of the shots you don't take.`,
-      icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
+      icon: new URL(localIconPath, url.origin).toString(), // Local icon path
+
       label: `Select a Game to play`,
       title: `Welcome to the Game`,
       type: "action",
@@ -116,12 +119,12 @@ export async function POST(request: Request) {
     !request.url.includes("bet") &&
     !request.url.includes("typeRaise")
   ) {
-    console.log("ttt", requestUrl.searchParams);
     let gameNo = requestUrl.searchParams.get("gameNo");
     let amount = requestUrl.searchParams.get("amount");
     let txr = await TransactionBuilder(sender, amount);
-
+    //@todo: arpita add liquidity check here
     if (gameNo == "1") {
+      //@todo:arpita send send to squads
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
@@ -138,6 +141,7 @@ export async function POST(request: Request) {
       });
       return res;
     } else {
+      //@todo:arpita send send to squads
       let txr = await TransactionBuilder(sender, amount);
       let usersCard = playUserGame();
       console.log("Users Card", usersCard.cards, "User Power", usersCard.value);
@@ -199,6 +203,7 @@ export async function POST(request: Request) {
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
     if (bet == "raise") {
+      //@todo: arpita send send to squads
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
@@ -243,6 +248,7 @@ export async function POST(request: Request) {
     let amount = requestUrl.searchParams.get("amount");
     let usersCard = requestUrl.searchParams.get("userCard");
     if (bet == "raise") {
+      //@todo: arpita send send to squads
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {

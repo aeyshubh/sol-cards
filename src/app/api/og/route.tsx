@@ -8,6 +8,8 @@ export const GET = async (request: NextRequest) => {
   // Split the cards parameter into an array
   const cardFaces = cardsParam.split(",").map((card) => card.trim());
 
+  const baseUrl = new URL(request.url).origin;
+
   // Create the OG image with the specified card images
   return new ImageResponse(
     (
@@ -18,24 +20,37 @@ export const GET = async (request: NextRequest) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 128,
-          background: "#c1c1c1",
+          backgroundImage: `url(${baseUrl}/images/poker-mat3.png)`,
+          backgroundSize: "100% 100%",
           position: "relative",
         }}
       >
-        {cardFaces.map((card, index) => (
-          <img
-            key={index}
-            src={`http://localhost:3000/cards/${card}.png`}
-            alt={`Card: ${card}`}
-            style={{
-              width: 300,
-              height: 500,
-              marginLeft: index === 0 ? 0 : -150, // Overlapping effect
-              zIndex: index,
-            }}
-          />
-        ))}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          {cardFaces.map((card, index) => (
+            <img
+              key={index}
+              src={`${baseUrl}/cards/${card}.png`}
+              alt={`Card: ${card}`}
+              style={{
+                width: "300px",
+                height: "500px",
+                marginLeft: index === 0 ? 0 : "-150px", // Overlapping effect
+                zIndex: index,
+              }}
+            />
+          ))}
+        </div>
       </div>
     ),
     {

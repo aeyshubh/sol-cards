@@ -336,6 +336,7 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
   ).toString();
 
   if (userWinStatus == 1) {
+    //@todo: arpita send send(param:amount) from squads to user
     return {
       type: "inline",
       action: {
@@ -361,6 +362,7 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
     };
   } else {
     return {
+      //@todo: arpita send send(param:amount/2) from squads to user
       type: "inline",
       action: {
         description: `Wow,It's a TIE,we will send your bet back to your account`,
@@ -425,6 +427,7 @@ export const endSecondGame = (req, value, cards, amount): NextActionLink => {
   ).toString();
 
   if (status == 1) {
+    //@todo: arpita send send(param:amount/2) from squads to user
     return {
       type: "inline",
       action: {
@@ -437,6 +440,7 @@ export const endSecondGame = (req, value, cards, amount): NextActionLink => {
       },
     };
   } else if (status == 2) {
+    //@todo: arpita send send(param:amount*2-fees) from squads to user
     return {
       type: "inline",
       action: {

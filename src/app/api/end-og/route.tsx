@@ -11,7 +11,7 @@ export const GET = async (request: NextRequest) => {
   // Split the cards into arrays
   const dealerCardFaces = dealerCards.split(",").map((card) => card.trim());
   const userCardFaces = userCards.split(",").map((card) => card.trim());
-
+  const baseUrl = new URL(request.url).origin;
   return new ImageResponse(
     (
       <div
@@ -22,7 +22,8 @@ export const GET = async (request: NextRequest) => {
           flexDirection: "column",
           justifyContent: "space-between",
           fontSize: 128,
-          background: "#c1c1c1",
+          backgroundImage: `url(${baseUrl}/images/poker-mat3.png)`,
+          backgroundSize: "100% 100%",
           position: "relative",
         }}
       >
@@ -33,7 +34,7 @@ export const GET = async (request: NextRequest) => {
           {dealerCardFaces.map((card, index) => (
             <img
               key={`dealer-${index}`}
-              src={`http://localhost:3000/cards/${card}.png`}
+              src={`${baseUrl}/cards/${card}.png`}
               alt={`Dealer Card: ${card}`}
               style={{
                 width: 200,
@@ -58,7 +59,7 @@ export const GET = async (request: NextRequest) => {
           {userCardFaces.map((card, index) => (
             <img
               key={`user-${index}`}
-              src={`http://localhost:3000/cards/${card}.png`}
+              src={`${baseUrl}/cards/${card}.png`}
               alt={`User Card: ${card}`}
               style={{
                 width: 200,
