@@ -314,18 +314,28 @@ export const raise = (type, card, value, amount): NextActionLink => {
   };
 };
 
-export const endGame = async (request, type, card, value, amount, sender) => {
+export const endGame = (
+  request,
+  type,
+  card,
+  value,
+  amount,
+  sender,
+  dealerCard,
+  userWinStatus,
+  winAmount
+): NextActionLink => {
   //Change wining status acc to high or low
-  let dealerCard = getDealerCard();
-  console.log("Dealer Card", dealerCard);
-  let userWinStatus = determineWinner(card, dealerCard, type);
-  console.log("User Win Status", userWinStatus);
-  console.log("Users card :", card, "dealer card :", dealerCard);
-  console.log(`Users Amount is ${amount}`);
+  // let dealerCard = getDealerCard();
+  // console.log("Dealer Card", dealerCard);
+  // let userWinStatus = determineWinner(card, dealerCard, type);
+  // console.log("User Win Status", userWinStatus);
+  // console.log("Users card :", card, "dealer card :", dealerCard);
+  // console.log(`Users Amount is ${amount}`);
 
   const [usercard_value, , suit] = card.split(" "); // Split by space, ignoring "of"
 
-  // Create a Card object
+  // // Create a Card object
   const user_card = getCardAbbreviation(new Card(value, suit));
 
   const origin = request.headers.host
@@ -336,24 +346,24 @@ export const endGame = async (request, type, card, value, amount, sender) => {
     origin
   ).toString();
 
-  let squadsPubKey = new PublicKey(
-    "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-  );
-  let connection = new Connection(clusterApiUrl("mainnet-beta"));
+  // let squadsPubKey = new PublicKey(
+  //   "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
+  // );
+  // let connection = new Connection(clusterApiUrl("mainnet-beta"));
 
-  const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+  // const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
 
-  const payer = base58ToKeypair(privateKeyBase58);
+  // const payer = base58ToKeypair(privateKeyBase58);
 
   if (userWinStatus == 1) {
     //@todo: arpita send send(param:amount) from squads to user
-    const signature = await transferSplFromSquadsTx({
-      connection,
-      payer,
-      sender,
-      squadsPubKey,
-      amount: Number(amount * 2 - amount * 2 * 0.069),
-    });
+    // const signature = await transferSplFromSquadsTx({
+    //   connection,
+    //   payer,
+    //   sender,
+    //   squadsPubKey,
+    //   amount: Number(amount * 2 - amount * 2 * 0.069),
+    // });
     return {
       type: "inline",
       action: {
@@ -361,7 +371,15 @@ export const endGame = async (request, type, card, value, amount, sender) => {
         icon: ogImageUrl,
         label: `Congratulations,You Won`,
         title: `Dealer had ${dealerCard},Your payout will automatically be sent to your account in 5 minutes`,
-        type: "completed",
+        type: "action",
+        links: {
+          actions: [
+            {
+              label: `Claim Prize`, // button text
+              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+            },
+          ],
+        },
       },
     };
   } else if (userWinStatus == 2) {
@@ -377,13 +395,13 @@ export const endGame = async (request, type, card, value, amount, sender) => {
     };
   } else {
     //@todo: arpita send send(param:amount/2) from squads to user
-    const signature = transferSplFromSquadsTx({
-      connection,
-      payer,
-      sender,
-      squadsPubKey,
-      amount: Number(amount - amount * 0.069),
-    });
+    // const signature = transferSplFromSquadsTx({
+    //   connection,
+    //   payer,
+    //   sender,
+    //   squadsPubKey,
+    //   amount: Number(amount - amount * 0.069),
+    // });
     return {
       type: "inline",
       action: {
@@ -391,53 +409,41 @@ export const endGame = async (request, type, card, value, amount, sender) => {
         icon: ogImageUrl,
         label: `It's a TIE`,
         title: `both have ${card},Wanna play again?`,
-        type: "completed",
+        type: "action",
+        links: {
+          actions: [
+            {
+              label: `Claim Prize`, // button text
+              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+            },
+          ],
+        },
       },
     };
   }
 };
 
-export const endSecondGame = (req, value, cards, amount): NextActionLink => {
-  let dealer = playDealerGame();
-  let playerValue = value;
+export const endSecondGame = (
+  req,
+  value,
+  cards,
+  amount,
+  dealer,
+  status,
+  cardStatus,
+  winAmount
+): NextActionLink => {
   let dealerValue = dealer.value;
-  let userWinStatus = false;
-  let cardStatus;
-  console.log(`Players Amount : ${amount}`);
-  console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
 
-  const dealerCardsArray = dealer.cards.split(",").map((card) => card.trim()); // Convert the comma-separated string to an array
+  const dealerCardsArray = dealer.cards
+    .split(",")
+    .map((card: any) => card.trim());
   const abbreviatedDealerCards = dealerCardsArray
-    .map((card) => {
-      const [value, , suit] = card.split(" "); // Split by space, ignoring "of"
-      return getCardAbbreviation(new Card(value, suit)); // Get the abbreviation using the Card class and getCardAbbreviation function
+    .map((card: any) => {
+      const [value, , suit] = card.split(" ");
+      return getCardAbbreviation(new Card(value, suit));
     })
-    .join(","); // Join the abbreviations into a comma-separated string without spaces
-
-  let status = 0;
-  if (playerValue > 21 && dealerValue > 21) {
-    cardStatus = "Both bust";
-    //return Payment
-    status = 1;
-  } else if (playerValue > 21) {
-    cardStatus = "Player busts! Dealer wins.";
-    //Exit
-  } else if (dealerValue > 21) {
-    cardStatus = "Dealer busts! Player wins.";
-    //Send Payment
-    status = 2;
-  } else if (playerValue > dealerValue) {
-    cardStatus = "Player wins!";
-    //send Payment
-    status = 2;
-  } else if (dealerValue > playerValue) {
-    cardStatus = "Dealer wins!";
-    //Exit
-  } else {
-    cardStatus = "Both Busts";
-    //Return Payment
-    status = 1;
-  }
+    .join(",");
 
   const origin = req.headers.host
     ? `http://${req.headers.host}`
@@ -454,10 +460,17 @@ export const endSecondGame = (req, value, cards, amount): NextActionLink => {
       action: {
         description: `Both Bust`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
         label: `It's a bust`,
         title: `Your payout will automatically be sent to your account in 5 minutes`,
-        type: "completed",
+        type: "action",
+        links: {
+          actions: [
+            {
+              label: `Claim Prize`, // button text
+              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+            },
+          ],
+        },
       },
     };
   } else if (status == 2) {
@@ -467,10 +480,17 @@ export const endSecondGame = (req, value, cards, amount): NextActionLink => {
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
         label: `Congratulations,${cardStatus}`,
         title: `Dealer had ${dealer.cards} (value: ${dealerValue}),Your payout will automatically be sent to your account`,
-        type: "completed",
+        type: "action",
+        links: {
+          actions: [
+            {
+              label: `Claim Prize`, // button text
+              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+            },
+          ],
+        },
       },
     };
   } else {
@@ -479,7 +499,6 @@ export const endSecondGame = (req, value, cards, amount): NextActionLink => {
       action: {
         description: `The only sure thing about luck is that it will change.`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
         label: `Sorry,You Lost`,
         title: `Dealer had : ${dealer.cards} (value:${dealer.value}), Wanna play again?`,
         type: "completed",

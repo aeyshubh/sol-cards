@@ -114,13 +114,14 @@ export async function transferSplFromSquadsTx({
     connection,
     payer,
     new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
-    sender
+    sender,
+    true
   );
 
   const transferInstruction = createTransferInstruction(
     senderTokenAccount.address,
     receiverTokenAccount.address,
-    new PublicKey(sender),
+    payer.publicKey,
     //@todo: handle bn and amount
     //check if this is correct
     BigInt(Number(amount) * 10 ** 6),
@@ -142,7 +143,7 @@ export async function transferSplFromSquadsTx({
 
   const currentTransactionIndex = Number(multisigInfo.transactionIndex);
   const newTransactionIndex = multisig.utils.toBigInt(
-    currentTransactionIndex + 2
+    currentTransactionIndex + 1
   );
 
   console.log(
@@ -195,58 +196,60 @@ export async function transferSplFromSquadsTx({
     });
 
     console.log("proposalCreateResult", proposalCreateResult);
+    const transactionIndex =
+      await multisig.accounts.Multisig.fromAccountAddress(
+        connection,
+        multisigPda
+      ).then((info) => info.transactionIndex);
 
     const approveProposalResult = await multisig.instructions.proposalApprove({
       multisigPda,
-      transactionIndex: newTransactionIndex,
+      transactionIndex: multisig.utils.toBigInt(transactionIndex),
       member: new PublicKey(payer.publicKey),
       programId: multisig.PROGRAM_ID,
     });
     console.log("approveProposalResult", approveProposalResult);
 
-    try {
-      const executeProposalResult =
-        await multisig.instructions.vaultTransactionExecute({
-          connection,
-          multisigPda,
-          transactionIndex: newTransactionIndex,
-          member: payer.publicKey,
-          programId: multisig.PROGRAM_ID,
-        });
-      console.log("executeProposalResult", executeProposalResult);
-
-      const executeProposalIx = executeProposalResult.instruction;
-      const proposalTx = new Transaction().add(proposalCreateResult);
-      // Add the instructions individually
-      proposalTx.add(approveProposalResult);
-      proposalTx.add(executeProposalIx);
-
-      console.log("proposalTx", proposalTx);
-
-      proposalTx.feePayer = sender;
-      proposalTx.recentBlockhash = (
-        await connection.getLatestBlockhash()
-      ).blockhash;
-
-      proposalTx.lastValidBlockHeight = (
-        await connection.getLatestBlockhash()
-      ).lastValidBlockHeight;
-
-      const transferSignature = await sendAndConfirmTransaction(
+    const executeProposalResult =
+      await multisig.instructions.vaultTransactionExecute({
         connection,
-        proposalTx,
-        [payer],
-        {
-          skipPreflight: false,
-          commitment: "confirmed",
-        }
-      );
+        multisigPda,
+        transactionIndex: multisig.utils.toBigInt(transactionIndex),
+        member: payer.publicKey,
+        programId: multisig.PROGRAM_ID,
+      });
+    console.log("executeProposalResult", executeProposalResult);
 
-      console.log("✅ Transaction executed:", transferSignature);
-    } catch (error) {
-      console.log(error);
-    }
+    const executeProposalIx = executeProposalResult.instruction;
+    const proposalTx = new Transaction().add(proposalCreateResult);
+    // Add the instructions individually
+    proposalTx.add(approveProposalResult);
+    proposalTx.add(executeProposalIx);
 
+    console.log("proposalTx", proposalTx);
+
+    proposalTx.feePayer = sender;
+    proposalTx.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
+
+    proposalTx.lastValidBlockHeight = (
+      await connection.getLatestBlockhash()
+    ).lastValidBlockHeight;
+
+    // const transferSignature = await sendAndConfirmTransaction(
+    //   connection,
+    //   proposalTx,
+    //   [payer],
+    //   {
+    //     skipPreflight: false,
+    //     commitment: "confirmed",
+    //   }
+    // );
+
+    // console.log("✅ Transaction executed:", transferSignature);
+
+    return proposalTx as Transaction;
     // return transferSignature;
   } catch (error) {
     return Response.json({
