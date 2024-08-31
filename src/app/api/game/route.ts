@@ -44,7 +44,7 @@ import {
 import { playUserGame } from "@/app/cards";
 import { getUserCard } from "@/app/game1";
 import { send } from "process";
-import { base58ToKeypair, transferSplTx } from "@/app/utils";
+import { base58ToKeypair, transferSplToSquadsTx } from "@/app/utils";
 //const client = new BlinksightsClient(process.env.METKEY);
 
 export async function GET(request: Request) {
@@ -105,15 +105,15 @@ export const OPTIONS = GET; // OPTIONS request handler
 
 export async function POST(request: Request) {
   const body: ActionPostRequest = await request.json();
-  //  client.trackActionV1(request.headers, body.account, request.url);
-  let squadsPubKey = new PublicKey(
-    "3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5"
-  );
+
   let connection = new Connection(clusterApiUrl("mainnet-beta"));
 
   const requestUrl = new URL(request.url);
   let sender: PublicKey = new PublicKey(body.account);
-
+  //  client.trackActionV1(request.headers, body.account, request.url);
+  const squadsPubKey = new PublicKey(
+    "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
+  );
   const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
 
   const payer = base58ToKeypair(privateKeyBase58);
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     // let txr = await TransactionBuilder(sender, amount);
     //@todo: arpita add liquidity check here
     if (gameNo == "1") {
-      const transaction = await transferSplTx({
+      const transaction = await transferSplToSquadsTx({
         connection,
         payer,
         sender,
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       });
       return res;
     } else {
-      const transaction = await transferSplTx({
+      const transaction = await transferSplToSquadsTx({
         connection,
         payer,
         sender,
@@ -228,7 +228,7 @@ export async function POST(request: Request) {
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
     if (bet == "raise") {
-      const transaction = await transferSplTx({
+      const transaction = await transferSplToSquadsTx({
         connection,
         payer,
         sender,
@@ -254,7 +254,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endGame(request, type, getcard, getValue, amount),
+            next: endGame(request, type, getcard, getValue, amount, sender),
           },
           transaction: tx,
           message: `Bet`,
@@ -279,7 +279,7 @@ export async function POST(request: Request) {
     let amount = requestUrl.searchParams.get("amount");
     let usersCard = requestUrl.searchParams.get("userCard");
     if (bet == "raise") {
-      const transaction = await transferSplTx({
+      const transaction = await transferSplToSquadsTx({
         connection,
         payer,
         sender,
@@ -354,7 +354,7 @@ export async function POST(request: Request) {
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         links: {
-          next: endGame(request, type, getcard, getValue, amount),
+          next: endGame(request, type, getcard, getValue, amount, sender),
         },
         transaction: tx,
         message: `Bet`,

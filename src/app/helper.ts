@@ -14,6 +14,7 @@ import {
   Card,
   getCardAbbreviation,
 } from "@/app/game1";
+import { base58ToKeypair, transferSplFromSquadsTx } from "./utils";
 const SEND_PUBKEY = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
 export const getGame = (): NextActionLink => {
@@ -313,7 +314,7 @@ export const raise = (type, card, value, amount): NextActionLink => {
   };
 };
 
-export const endGame = (req, type, card, value, amount): NextActionLink => {
+export const endGame = async (request, type, card, value, amount, sender) => {
   //Change wining status acc to high or low
   let dealerCard = getDealerCard();
   console.log("Dealer Card", dealerCard);
@@ -327,22 +328,37 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
   // Create a Card object
   const user_card = getCardAbbreviation(new Card(value, suit));
 
-  const origin = req.headers.host
-    ? `http://${req.headers.host}`
+  const origin = request.headers.host
+    ? `http://${request.headers.host}`
     : "http://localhost:3000";
   const ogImageUrl = new URL(
     `/api/end-og?dealer_card=${dealerCard.card_face}&user_card=${user_card}`,
     origin
   ).toString();
 
+  let squadsPubKey = new PublicKey(
+    "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
+  );
+  let connection = new Connection(clusterApiUrl("mainnet-beta"));
+
+  const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+
+  const payer = base58ToKeypair(privateKeyBase58);
+
   if (userWinStatus == 1) {
     //@todo: arpita send send(param:amount) from squads to user
+    const signature = await transferSplFromSquadsTx({
+      connection,
+      payer,
+      sender,
+      squadsPubKey,
+      amount: Number(amount * 2 - amount * 2 * 0.069),
+    });
     return {
       type: "inline",
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/493c71d1-8164-48de-9a91-c4b321c9bd5d/7cr.jpeg`,
         label: `Congratulations,You Won`,
         title: `Dealer had ${dealerCard},Your payout will automatically be sent to your account in 5 minutes`,
         type: "completed",
@@ -354,20 +370,25 @@ export const endGame = (req, type, card, value, amount): NextActionLink => {
       action: {
         description: `The only sure thing about luck is that it will change.`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
         label: `Sorry,You Lost`,
         title: `Dealer has ${dealerCard} , Wanna play again?`,
         type: "completed",
       },
     };
   } else {
+    //@todo: arpita send send(param:amount/2) from squads to user
+    const signature = transferSplFromSquadsTx({
+      connection,
+      payer,
+      sender,
+      squadsPubKey,
+      amount: Number(amount - amount * 0.069),
+    });
     return {
-      //@todo: arpita send send(param:amount/2) from squads to user
       type: "inline",
       action: {
         description: `Wow,It's a TIE,we will send your bet back to your account`,
         icon: ogImageUrl,
-        // icon: `https://ucarecdn.com/952a1016-da53-4c68-adce-d54fe90b2bd1/simpson.jpg`,
         label: `It's a TIE`,
         title: `both have ${card},Wanna play again?`,
         type: "completed",
