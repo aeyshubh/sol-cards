@@ -95,7 +95,7 @@ export const startGame = (req, amount: number): NextActionLink => {
   return {
     type: "inline",
     action: {
-      description: `You can select whether you want to bet on High card/Low card. If you bet on High card and you have a higher card than the dealer, then you win. \n In case of same cards: ♠️>♦️>♣️>♥️`,
+      description: `Bet on High card/Low car, If you bet on High card and you have a higher card than the dealer, then you win. \n In case of same cards: ♠️>♦️>♣️>♥️`,
       icon: iconUrl, // Use the constructed full URL
       label: ``,
       title: `You got ${userCard?.card}`,
@@ -144,7 +144,7 @@ export const startGame2 = (req, cards, value, amount): NextActionLink => {
   return {
     type: "inline",
     action: {
-      description: `You get 3 cards and the dealer gets 3 cards. Whosoever's cards are nearest to 21 wins. Above 21 busts.`,
+      description: `You and the dealer gets 3 cards . Whosoever's cards are nearest to 21 wins. Above 21 busts.`,
       icon: ogImageUrl, // Use the OG image URL in the icon field
       label: `Following are your cards`,
       title: `You have ${cards} (value : ${value})`,

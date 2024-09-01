@@ -20,6 +20,7 @@ import {
 } from "@solana/web3.js";
 import "dotenv/config";
 import * as multisig from "@sqds/multisig";
+import {ActionError} from "@solana/actions";
 import {
   startGame,
   endGame,
@@ -35,6 +36,7 @@ import {
   transferSplToSquadsTx,
 } from "@/app/utils";
 import { BlinksightsClient } from "blinksights-sdk";
+import { NextResponse } from "next/server";
 const client = new BlinksightsClient(process.env.METKEY as string);
 
 export async function GET(request: Request) {
@@ -46,45 +48,13 @@ export async function GET(request: Request) {
   const localIconPath = "/images/poker-table2.png";
   //@todo:fetch squads send balance
   //also compare the bet*2 money is there in squads
-  const multisigPda = new PublicKey(
-    process.env.NEXT_PUBLIC_SQUAD_KEY as string
-  );
-  const [vaultPda] = multisig.getVaultPda({
-    multisigPda,
-    index: 0,
-  });
-  const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
-
-  const payer = base58ToKeypair(privateKeyBase58);
-  const senderTokenAccount2 = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
-    vaultPda,
-    true
-  );
-  let balance = Number(senderTokenAccount2.amount)/10**6;
-  console.log("Token Account"+(balance)); 
-  if (balance < 100) {
-
+  
     const payload: ActionGetResponse = {
-      icon: new URL(localIconPath, url.origin).toString(), // Local icon path
-      label: "Liquidity Issue",
-      title: `Less liquidity in the Pool`,
-      description: `Available Liquidity is ${balance} SEND which is less than the required to payout if you win!`,
-      type: "action",
-    };
-    const res = Response.json(payload, {
-      headers: ACTIONS_CORS_HEADERS,
-    });
-    return res;
-  } else {
-    const payload: ActionGetResponse = {
-      description: `Enter Game No. below👇 \n1. High-Low Card   2.Near to 21 `,
+      description: `2X your bet upon winning!\n\n Enter Game No. below👇 \n1. High-Low Card\n2. Near to 21`,
       icon: new URL(localIconPath, url.origin).toString(), // Local icon path
 
-      label: `Select a Game to play`,
-      title: `SOL CARDS`,
+      label: `Select a Game to play and 2X your bet upon winning!`,
+      title: `SOL-CARDS`,
       type: "action",
       links: {
         actions: [
@@ -112,7 +82,7 @@ export async function GET(request: Request) {
     });
     return res;
   }
-}
+
 
 export const OPTIONS = GET; // OPTIONS request handler
 
@@ -124,6 +94,9 @@ export async function POST(request: Request) {
   );
 
   const requestUrl = new URL(request.url);
+
+  const url = new URL(request.url);
+  const localIconPath = "/images/poker-table2.png";
   let sender: PublicKey = new PublicKey(body.account);
   //  client.trackActionV1(request.headers, body.account, request.url);
   const squadsPubKey = new PublicKey(
@@ -142,6 +115,32 @@ export async function POST(request: Request) {
   );
   tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
   tx.feePayer = sender;
+  let gameAmt = requestUrl.searchParams.get("amount");
+  const multisigPda = new PublicKey(
+    process.env.NEXT_PUBLIC_SQUAD_KEY as string
+  );
+  const [vaultPda] = multisig.getVaultPda({
+    multisigPda,
+    index: 0,
+  });
+
+  const senderTokenAccount2 = await getOrCreateAssociatedTokenAccount(
+    connection,
+    payer,
+    new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
+    vaultPda,
+    true
+  );
+  let balance = Number(senderTokenAccount2.amount)/10**6;
+  console.log("Token Account"+(balance)); 
+  if (balance < Number(gameAmt) *2) {
+
+    return Response.json({ message: `Liquidity not found(req :${Number(gameAmt) *2},have : ${balance}) `} as ActionError, {
+      status: 403,
+      headers: ACTIONS_CORS_HEADERS,
+    });
+
+  }
   if (
     request.url.includes("gameNo") &&
     !request.url.includes("bet") &&
@@ -218,6 +217,7 @@ export async function POST(request: Request) {
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
 
+
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         links: {
@@ -248,60 +248,69 @@ export async function POST(request: Request) {
     let amount = requestUrl.searchParams.get("amount");
     let raiseAmount = requestUrl.searchParams.get("amtRaise");
     // Take send from user and send to squads
-    if (bet == "raise") {
-      console.log("yyy", raiseAmount);
-      const transaction = await transferSplToSquadsTx({
-        connection,
-        payer,
-        sender,
-        squadsPubKey,
-        amount: Number(raiseAmount),
-      });
-      const payload: ActionPostResponse = await createPostResponse({
-        fields: {
-          links: {
-            next: endGame(
-              getcard,
-              type,
-              getValue,
-              request,
-              sender,
-              Number(amount) + Number(raiseAmount)
-            ),
-          },
-          transaction: transaction,
-          message: `Bet`,
-        },
-        // note: no additional signers are needed
-        // signers: [],
-      });
-      const res = Response.json(payload, {
-        headers: ACTIONS_CORS_HEADERS,
-      });
-      return res;
-    } else {
-      //from squads to wallet
-      let type = requestUrl.searchParams.get("type");
-      let getcard = requestUrl.searchParams.get("card");
-      let getValue = requestUrl.searchParams.get("value");
-      let amount = requestUrl.searchParams.get("amount");
+    if (balance < Number(raiseAmount) *2) {
 
-      const payload: ActionPostResponse = await createPostResponse({
-        fields: {
-          links: {
-            next: endGame(getcard, type, getValue, request, sender, amount),
+      
+    return Response.json({ message: `Liquidity not found(req :${Number(raiseAmount) *2},have : ${balance}) `} as ActionError, {
+      status: 403,
+      headers: ACTIONS_CORS_HEADERS,
+    });
+    }else{
+      if (bet == "raise") {
+        console.log("yyy", raiseAmount);
+        const transaction = await transferSplToSquadsTx({
+          connection,
+          payer,
+          sender,
+          squadsPubKey,
+          amount: Number(raiseAmount),
+        });
+        const payload: ActionPostResponse = await createPostResponse({
+          fields: {
+            links: {
+              next: endGame(
+                getcard,
+                type,
+                getValue,
+                request,
+                sender,
+                Number(amount) + Number(raiseAmount)
+              ),
+            },
+            transaction: transaction,
+            message: `Bet`,
           },
-          transaction: tx,
-          message: `Bet`,
-        },
-        // note: no additional signers are needed
-        // signers: [],
-      });
-
-      const res = Response.json(payload, {
-        headers: ACTIONS_CORS_HEADERS,
-      });
-      return res;
+          // note: no additional signers are needed
+          // signers: [],
+        });
+        const res = Response.json(payload, {
+          headers: ACTIONS_CORS_HEADERS,
+        });
+        return res;
+      } else {
+        //from squads to wallet
+        let type = requestUrl.searchParams.get("type");
+        let getcard = requestUrl.searchParams.get("card");
+        let getValue = requestUrl.searchParams.get("value");
+        let amount = requestUrl.searchParams.get("amount");
+  
+        const payload: ActionPostResponse = await createPostResponse({
+          fields: {
+            links: {
+              next: endGame(getcard, type, getValue, request, sender, amount),
+            },
+            transaction: tx,
+            message: `Bet`,
+          },
+          // note: no additional signers are needed
+          // signers: [],
+        });
+  
+        const res = Response.json(payload, {
+          headers: ACTIONS_CORS_HEADERS,
+        });
+        return res;
+      }
     }
   }
   //game 2
@@ -314,35 +323,47 @@ export async function POST(request: Request) {
     let usersCard = requestUrl.searchParams.get("userCard");
 
     //Send raiseAmount to squads
+
     if (bet == "raise" && Number(raiseAmount) > 0) {
-      const transaction = await transferSplToSquadsTx({
-        connection,
-        payer,
-        sender,
-        squadsPubKey,
-        amount: Number(raiseAmount),
-      });
-      const payload: ActionPostResponse = await createPostResponse({
-        fields: {
-          links: {
-            next: endSecondGame(
-              request,
-              sender,
-              value,
-              card,
-              Number(amount) + Number(raiseAmount)
-            ),
+      if (balance < Number(raiseAmount) *2) {
+
+       
+    return Response.json({ message: `Liquidity not found(req :${Number(raiseAmount) *2},have : ${balance}) `} as ActionError, {
+      status: 403,
+      headers: ACTIONS_CORS_HEADERS,
+    });
+      }
+      else{
+        const transaction = await transferSplToSquadsTx({
+          connection,
+          payer,
+          sender,
+          squadsPubKey,
+          amount: Number(raiseAmount),
+        });
+        const payload: ActionPostResponse = await createPostResponse({
+          fields: {
+            links: {
+              next: endSecondGame(
+                request,
+                sender,
+                value,
+                card,
+                Number(amount) + Number(raiseAmount)
+              ),
+            },
+            transaction: transaction,
+            message: `Bet`,
           },
-          transaction: transaction,
-          message: `Bet`,
-        },
-        // note: no additional signers are needed
-        // signers: [],
-      });
-      const res = Response.json(payload, {
-        headers: ACTIONS_CORS_HEADERS,
-      });
-      return res;
+          // note: no additional signers are needed
+          // signers: [],
+        });
+        const res = Response.json(payload, {
+          headers: ACTIONS_CORS_HEADERS,
+        });
+        return res;
+      }
+
     }
     //end second game with no raise
     else {
