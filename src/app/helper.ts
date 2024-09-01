@@ -288,7 +288,7 @@ export const startGame2 = (req, cards, value, amount): NextActionLink => {
     },
   };
 };
-
+//raise For game 1
 export const raise = (type, card, value, amount): NextActionLink => {
   return {
     type: "inline",
@@ -302,7 +302,13 @@ export const raise = (type, card, value, amount): NextActionLink => {
         actions: [
           {
             label: `Raise`, // button text
-            href: `/api/game?bet=raise&card=${card}&type=${type}&value=${value}&amount=${amount}`, // api endpoint
+            href: `/api/game?bet=raise&card=${card}&type=${type}&value=${value}&amount=${amount}&amtRaise={sendAmt}`, // api endpoint
+            parameters: [
+              {
+                name: "sendAmt", // field name
+                label: "Enter Send to raise", // text input placeholder
+              },
+            ],
           },
           {
             label: `No raise`, // button text
@@ -314,22 +320,12 @@ export const raise = (type, card, value, amount): NextActionLink => {
   };
 };
 
-export const endGame = (
-  request,
-  type,
-  card,
-  value,
-  amount,
-  sender,
-  dealerCard,
-  userWinStatus
-  // winAmount
-): NextActionLink => {
+export const endGame = (card,type,value,request): NextActionLink => {
   //Change wining status acc to high or low
-  // let dealerCard = getDealerCard();
-  // console.log("Dealer Card", dealerCard);
-  // let userWinStatus = determineWinner(card, dealerCard, type);
-  // console.log("User Win Status", userWinStatus);
+   let dealerCard = getDealerCard();
+   console.log("Dealer Card", dealerCard);
+   let userWinStatus = determineWinner(card, dealerCard, type);
+   console.log("User Win Status", userWinStatus);
   // console.log("Users card :", card, "dealer card :", dealerCard);
   // console.log(`Users Amount is ${amount}`);
 

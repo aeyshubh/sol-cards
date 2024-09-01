@@ -242,11 +242,13 @@ export async function POST(request: Request) {
     let getcard = requestUrl.searchParams.get("card");
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
+    let raiseAmount = requestUrl.searchParams.get("sendAmt");
+    // Take send from user and send to squads
     if (bet == "raise") {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: raiseSend(type, getcard, getValue, amount),
+            next: endGame(getcard, type,getValue,request),
           },
           transaction: tx,
           message: `Bet`,
@@ -260,60 +262,14 @@ export async function POST(request: Request) {
       return res;
     } else {
       //from squads to wallet
-      let dealerCard = getDealerCard();
-      console.log("Dealer Card", dealerCard);
-      let userWinStatus = determineWinner(getcard, dealerCard, type);
-      console.log("User Win Status", userWinStatus);
-      console.log("Users card :", getcard, "dealer card :", dealerCard);
-      console.log(`Users Amount is ${amount}`);
-
-      let squadsPubKey = new PublicKey(
-        "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-      );
-      let connection = new Connection(clusterApiUrl("mainnet-beta"));
-
-      const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
-
-      const payer = base58ToKeypair(privateKeyBase58);
-
-      let txAmount;
-
-      if (userWinStatus === 1) {
-        //fix this
-        txAmount = Number(3);
-      } else if (userWinStatus == 2) {
-        txAmount = 0;
-      } else {
-        //fix this
-        txAmount = Number(1);
-      }
-      const tr = await transferSplFromSquadsTx({
-        // connection,
-        // payer,
-        sender,
-        // squadsPubKey,
-        // amount: txAmount,
-      });
-
-      if (!tr) {
-        throw Error("tr is not formed");
-      }
-
-      console.log("tr", tr);
-
+      let type = requestUrl.searchParams.get("type");
+      let getcard = requestUrl.searchParams.get("card");
+      let getValue = requestUrl.searchParams.get("value");
+      let amount = requestUrl.searchParams.get("amount");
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endGame(
-              request,
-              type,
-              getcard,
-              getValue,
-              amount,
-              sender,
-              dealerCard,
-              userWinStatus
-            ),
+            next: endGame(getcard, type,getValue,request),
           },
           transaction: tx,
           message: `Bet`,
@@ -486,13 +442,7 @@ export async function POST(request: Request) {
       txAmount = 0;
     }
 
-    const transaction: Transaction = await transferSplFromSquadsTx({
-      connection,
-      payer,
-      sender,
-      squadsPubKey,
-      amount: txAmount,
-    });
+// Transfer SEND from squads to Winner if win
 
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
@@ -507,7 +457,7 @@ export async function POST(request: Request) {
             cardStatus
           ),
         },
-        transaction: status == 1 || status == 2 ? transaction : tx,
+        transaction: tx,
         message: `Raising Send`,
       },
       // note: no additional signers are needed
@@ -586,42 +536,5 @@ export async function POST(request: Request) {
       headers: ACTIONS_CORS_HEADERS,
     });
     return res;
-  } else if (
-    request.url.includes("gameNo") &&
-    request.url.includes("winAmount")
-  ) {
-    let gameNo = requestUrl.searchParams.get("gameNo");
-    let winAmount = requestUrl.searchParams.get("winAmount");
-    if (Number(gameNo) == 1) {
-      let squadsPubKey = new PublicKey(
-        "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-      );
-      let connection = new Connection(clusterApiUrl("mainnet-beta"));
-      const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
-      const payer = base58ToKeypair(privateKeyBase58);
-
-      const transaction: Transaction = await transferSplFromSquadsTx({
-        connection,
-        payer,
-        sender,
-        squadsPubKey,
-        amount: Number(winAmount),
-      });
-
-      const payload: ActionPostResponse = await createPostResponse({
-        fields: {
-          transaction,
-          message: `Game Result`,
-        },
-
-        // note: no additional signers are needed
-        // signers: [],
-      });
-      const res = Response.json(payload, {
-        headers: ACTIONS_CORS_HEADERS,
-      });
-      return res;
-    } else {
-    }
   }
 }
