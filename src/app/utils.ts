@@ -78,17 +78,10 @@ export async function transferSplToSquadsTx({
 }
 
 export async function transferSplFromSquadsTx({
-  // connection,
-  // payer,
   sender,
   amount,
-}: // squadsPubKey,
-
-{
-  // connection: Connection;
-  // payer: Keypair;
+}: {
   sender: PublicKey;
-  // squadsPubKey: PublicKey;
   amount: Number;
 }) {
   try {

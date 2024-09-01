@@ -30,7 +30,7 @@ import {
   transferSplToSquadsTx,
 } from "@/app/utils";
 import { BlinksightsClient } from "blinksights-sdk";
-const client = new BlinksightsClient(process.env.METKEY);
+const client = new BlinksightsClient(process.env.METKEY as string);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -121,7 +121,6 @@ export async function POST(request: Request) {
   ) {
     let gameNo = requestUrl.searchParams.get("gameNo");
     let amount = requestUrl.searchParams.get("amount");
-    // let txr = await TransactionBuilder(sender, amount);
     //@todo: arpita add liquidity check here
     if (gameNo == "1") {
       const transaction = await transferSplToSquadsTx({
@@ -233,7 +232,14 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endGame(getcard, type, getValue, request, sender, amount),
+            next: endGame(
+              getcard,
+              type,
+              getValue,
+              request,
+              sender,
+              Number(amount) + Number(raiseAmount)
+            ),
           },
           transaction: transaction,
           message: `Bet`,
