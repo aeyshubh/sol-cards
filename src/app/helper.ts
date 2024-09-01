@@ -14,6 +14,7 @@ import {
   getCardAbbreviation,
 } from "@/app/game1";
 import { transferSplFromSquadsTx } from "./utils";
+import { NextRequest } from "next/server";
 const SEND_PUBKEY = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
 export const getGame = (): NextActionLink => {

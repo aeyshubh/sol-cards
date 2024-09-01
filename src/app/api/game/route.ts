@@ -218,15 +218,23 @@ export async function POST(request: Request) {
     let getcard = requestUrl.searchParams.get("card");
     let getValue = requestUrl.searchParams.get("value");
     let amount = requestUrl.searchParams.get("amount");
-    let raiseAmount = requestUrl.searchParams.get("sendAmt");
+    let raiseAmount = requestUrl.searchParams.get("amtRaise");
     // Take send from user and send to squads
     if (bet == "raise") {
+      console.log("yyy", raiseAmount);
+      const transaction = await transferSplToSquadsTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(raiseAmount),
+      });
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
             next: endGame(getcard, type, getValue, request, sender, amount),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Bet`,
         },
         // note: no additional signers are needed
