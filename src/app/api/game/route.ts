@@ -275,7 +275,9 @@ export async function POST(request: Request) {
       });
       return res;
     }
-  } else if (request.url.includes("raiseAmt")) {
+  }
+  //game 2
+  else if (request.url.includes("raiseAmt")) {
     let bet = requestUrl.searchParams.get("bet");
     let value = requestUrl.searchParams.get("value");
     let card = requestUrl.searchParams.get("card");
@@ -288,7 +290,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endSecondGame(value, card, request, amount),
+            next: endSecondGame(request, sender, value, card, amount),
           },
           transaction: tx,
           message: `Bet`,
@@ -303,69 +305,12 @@ export async function POST(request: Request) {
     }
     //end second game with no raise
     else {
-      let dealer = playDealerGame();
-      let playerValue = Number(value);
-      let dealerValue = dealer.value;
-      let cardStatus;
-      console.log(`Players Amount : ${amount}`);
-      console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
-
-      let status = 0;
-      if (playerValue > 21 && dealerValue > 21) {
-        cardStatus = "Both bust";
-        //return Payment
-        status = 1;
-      } else if (playerValue > 21) {
-        cardStatus = "Player busts! Dealer wins.";
-        //Exit
-      } else if (dealerValue > 21) {
-        cardStatus = "Dealer busts! Player wins.";
-        //Send Payment
-        status = 2;
-      } else if (playerValue > dealerValue) {
-        cardStatus = "Player wins!";
-        //send Payment
-        status = 2;
-      } else if (dealerValue > playerValue) {
-        cardStatus = "Dealer wins!";
-        //Exit
-      } else {
-        cardStatus = "Both Busts";
-        //Return Payment
-        status = 1;
-      }
-
-      let txAmount;
-      if (status == 1) {
-        txAmount = 1;
-      } else if (status == 2) {
-        txAmount = 3;
-      } else {
-        txAmount = 0;
-      }
-
-      const transaction: Transaction = await transferSplFromSquadsTx({
-        connection,
-        payer,
-        sender,
-        squadsPubKey,
-        amount: txAmount,
-      });
-
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endSecondGame(
-              request,
-              value,
-              card,
-              amount,
-              dealer,
-              status,
-              cardStatus
-            ),
+            next: endSecondGame(request, sender, value, card, amount),
           },
-          transaction: status == 1 || status == 2 ? transaction : tx,
+          transaction: tx,
           message: `Bet`,
         },
         // note: no additional signers are needed
@@ -438,6 +383,7 @@ export async function POST(request: Request) {
         links: {
           next: endSecondGame(
             request,
+            sender,
             value,
             card,
             amountToSend,

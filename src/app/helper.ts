@@ -15,6 +15,7 @@ import {
 } from "@/app/game1";
 import { transferSplFromSquadsTx } from "./utils";
 import { NextRequest } from "next/server";
+import { playDealerGame } from "./cards";
 const SEND_PUBKEY = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
 export const getGame = (): NextActionLink => {
@@ -287,7 +288,7 @@ export const startGame2 = (req, cards, value, amount): NextActionLink => {
           },
           {
             label: `No raise`, // button text
-            href: `/api/game?bet=noraise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}`, // api endpoint
+            href: `/api/game?bet=noraise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}&raiseAmt=0`, // api endpoint
           },
         ],
       },
@@ -399,7 +400,13 @@ export const endGame = (
   }
 };
 
-export const endSecondGame = (value, card, request, amount): NextActionLink => {
+export const endSecondGame = (
+  request,
+  sender,
+  value,
+  card,
+  amount
+): NextActionLink => {
   let dealerCard = getDealerCard();
 
   const dealerCardsArray = dealerCard.card
@@ -412,15 +419,62 @@ export const endSecondGame = (value, card, request, amount): NextActionLink => {
     })
     .join(",");
 
+  let dealer = playDealerGame();
+  let playerValue = Number(value);
+  let dealerValue = dealer.value;
+  let cardStatus;
+  console.log(`Players Amount : ${amount}`);
+  console.log(
+    `Dealer cards : ${dealer.cards} (value: ${dealerValue}), ${abbreviatedDealerCards}`
+  );
+
+  let status = 0;
+  if (playerValue > 21 && dealerValue > 21) {
+    cardStatus = "Both bust";
+    //return Payment
+    status = 1;
+  } else if (playerValue > 21) {
+    cardStatus = "Player busts! Dealer wins.";
+    //Exit
+  } else if (dealerValue > 21) {
+    cardStatus = "Dealer busts! Player wins.";
+    //Send Payment
+    status = 2;
+  } else if (playerValue > dealerValue) {
+    cardStatus = "Player wins!";
+    //send Payment
+    status = 2;
+  } else if (dealerValue > playerValue) {
+    cardStatus = "Dealer wins!";
+    //Exit
+  } else {
+    cardStatus = "Both Busts";
+    //Return Payment
+    status = 1;
+  }
+
+  let txAmount: number;
+  if (status == 1) {
+    txAmount = amount - amount * 0.069;
+  } else if (status == 2) {
+    txAmount = amount * 2 - amount * 2 * 0.069;
+  } else {
+    txAmount = 0;
+  }
+
+  const transaction = transferSplFromSquadsTx({
+    sender,
+    amount: txAmount,
+  });
+
   const origin = request.headers.host
-    ? `http://${req.headers.host}`
+    ? `http://${request.headers.host}`
     : "http://localhost:3000";
   const ogImageUrl = new URL(
     `/api/end-og?dealer_card=${abbreviatedDealerCards}&user_card=${card}`,
     origin
   ).toString();
 
-  let status = 1;
   if (status == 1) {
     //@todo: arpita send send(param:amount/2) from squads to user
     return {
