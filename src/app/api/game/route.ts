@@ -116,7 +116,9 @@ export const OPTIONS = GET; // OPTIONS request handler
 export async function POST(request: Request) {
   const body: ActionPostRequest = await request.json();
 
-  let connection = new Connection(clusterApiUrl("mainnet-beta"));
+  let connection = new Connection(
+    process.env.NEXT_PUBLIC_RPC || clusterApiUrl("mainnet-beta")
+  );
 
   const requestUrl = new URL(request.url);
   let sender: PublicKey = new PublicKey(body.account);
@@ -296,6 +298,8 @@ export async function POST(request: Request) {
       if (!tr) {
         throw Error("tr is not formed");
       }
+
+      console.log("tr", tr);
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {

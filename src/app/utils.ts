@@ -92,7 +92,7 @@ export async function transferSplFromSquadsTx({
 }) {
   try {
     const connection = new Connection(
-      clusterApiUrl("mainnet-beta"),
+      process.env.NEXT_PUBLIC_RPC || clusterApiUrl("mainnet-beta"),
       "confirmed"
     );
 
@@ -165,7 +165,7 @@ export async function transferSplFromSquadsTx({
     );
 
     const transaction = new Transaction().add(transactionInstruction);
-    transaction.feePayer = sender;
+    transaction.feePayer = payer.publicKey;
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
@@ -208,6 +208,8 @@ export async function transferSplFromSquadsTx({
         member: new PublicKey(payer.publicKey),
         programId: multisig.PROGRAM_ID,
       });
+
+    console.log("executeProposalResult", executeProposalResult);
 
     const executeProposalIx = executeProposalResult.instruction;
     const proposalTx = new Transaction().add(proposalCreateResult);
