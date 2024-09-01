@@ -277,7 +277,13 @@ export const startGame2 = (req, cards, value, amount): NextActionLink => {
         actions: [
           {
             label: `Raise`, // button text
-            href: `/api/game?bet=raise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}`, // api endpoint
+            href: `/api/game?bet=raise&value=${value}&gameNo=2&card=${abbreviatedCards}&amount=${amount}&raiseAmt={sendAmt}`, // api endpoint
+            parameters: [
+              {
+                name: "sendAmt", // field name
+                label: "Enter Send to raise", // text input placeholder
+              },
+            ],
           },
           {
             label: `No raise`, // button text
@@ -419,19 +425,10 @@ export const endGame = (card,type,value,request): NextActionLink => {
   }
 };
 
-export const endSecondGame = (
-  req,
-  value,
-  cards,
-  amount,
-  dealer,
-  status,
-  cardStatus,
-  winAmount
-): NextActionLink => {
-  let dealerValue = dealer.value;
+export const endSecondGame = (value,card,request,amount): NextActionLink => {
+  let dealerCard = getDealerCard();
 
-  const dealerCardsArray = dealer.cards
+  const dealerCardsArray = dealerCard.card
     .split(",")
     .map((card: any) => card.trim());
   const abbreviatedDealerCards = dealerCardsArray
@@ -441,14 +438,15 @@ export const endSecondGame = (
     })
     .join(",");
 
-  const origin = req.headers.host
+  const origin = request.headers.host
     ? `http://${req.headers.host}`
     : "http://localhost:3000";
   const ogImageUrl = new URL(
-    `/api/end-og?dealer_card=${abbreviatedDealerCards}&user_card=${cards}`,
+    `/api/end-og?dealer_card=${abbreviatedDealerCards}&user_card=${card}`,
     origin
   ).toString();
 
+  let status = 1
   if (status == 1) {
     //@todo: arpita send send(param:amount/2) from squads to user
     return {
@@ -458,15 +456,7 @@ export const endSecondGame = (
         icon: ogImageUrl,
         label: `It's a bust`,
         title: `Your payout will automatically be sent to your account in 5 minutes`,
-        type: "action",
-        links: {
-          actions: [
-            {
-              label: `Claim Prize`, // button text
-              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-            },
-          ],
-        },
+        type: "completed",
       },
     };
   } else if (status == 2) {
@@ -478,15 +468,7 @@ export const endSecondGame = (
         icon: ogImageUrl,
         label: `Congratulations, ${cardStatus}`,
         title: `Dealer had ${dealer.cards} (value: ${dealerValue}), Your payout will automatically be sent to your account`,
-        type: "action",
-        links: {
-          actions: [
-            {
-              label: `Claim Prize`, // button text
-              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-            },
-          ],
-        },
+        type: "completed",
       },
     };
   } else {

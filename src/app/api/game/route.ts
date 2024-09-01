@@ -284,22 +284,21 @@ export async function POST(request: Request) {
       return res;
     }
   } else if (
-    request.url.includes("bet") &&
-    request.url.includes("value") &&
-    request.url.includes("gameNo") &&
-    request.url.includes("card")
+    request.url.includes("raiseAmt") 
   ) {
     let bet = requestUrl.searchParams.get("bet");
     let value = requestUrl.searchParams.get("value");
     let card = requestUrl.searchParams.get("card");
     let amount = requestUrl.searchParams.get("amount");
-    let raiseAmount = requestUrl.searchParams.get("send");
+    let raiseAmount = requestUrl.searchParams.get("raiseAmt");
     let usersCard = requestUrl.searchParams.get("userCard");
+
+    //Send raiseAmount to squads
     if (bet == "raise") {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: raiseSendForSecondGame(value, card, amount),
+            next: endSecondGame(value,card,request,amount),
           },
           transaction: tx,
           message: `Bet`,
