@@ -1,3 +1,4 @@
+
 import {
   ActionPostResponse,
   createPostResponse,
@@ -19,6 +20,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import "dotenv/config";
+//@ts-ignore
 import * as multisig from "@sqds/multisig";
 import {ActionError} from "@solana/actions";
 import {
