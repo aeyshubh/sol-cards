@@ -480,8 +480,8 @@ export const endSecondGame = (
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
-        label: `Congratulations,${cardStatus}`,
-        title: `Dealer had ${dealer.cards} (value: ${dealerValue}),Your payout will automatically be sent to your account`,
+        label: `Congratulations, ${cardStatus}`,
+        title: `Dealer had ${dealer.cards} (value: ${dealerValue}), Your payout will automatically be sent to your account`,
         type: "action",
         links: {
           actions: [
@@ -499,11 +499,12 @@ export const endSecondGame = (
       action: {
         description: `The only sure thing about luck is that it will change.`,
         icon: ogImageUrl,
-        label: `Sorry,You Lost`,
-        title: `Dealer had : ${dealer.cards} (value:${dealer.value}), Wanna play again?`,
+        label: `Sorry, You Lost`,
+        title: `Dealer had: ${dealer.cards} (value: ${dealerValue}), Wanna play again?`,
         type: "completed",
       },
     };
   }
 };
+
 // Function to generate a random card

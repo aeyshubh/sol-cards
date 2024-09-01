@@ -576,5 +576,42 @@ export async function POST(request: Request) {
       headers: ACTIONS_CORS_HEADERS,
     });
     return res;
+  } else if (
+    request.url.includes("gameNo") &&
+    request.url.includes("winAmount")
+  ) {
+    let gameNo = requestUrl.searchParams.get("gameNo");
+    let winAmount = requestUrl.searchParams.get("winAmount");
+    if (Number(gameNo) == 1) {
+      let squadsPubKey = new PublicKey(
+        "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
+      );
+      let connection = new Connection(clusterApiUrl("mainnet-beta"));
+      const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+      const payer = base58ToKeypair(privateKeyBase58);
+
+      const transaction: Transaction = await transferSplFromSquadsTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(winAmount),
+      });
+
+      const payload: ActionPostResponse = await createPostResponse({
+        fields: {
+          transaction,
+          message: `Game Result`,
+        },
+
+        // note: no additional signers are needed
+        // signers: [],
+      });
+      const res = Response.json(payload, {
+        headers: ACTIONS_CORS_HEADERS,
+      });
+      return res;
+    } else {
+    }
   }
 }
