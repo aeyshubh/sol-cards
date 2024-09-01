@@ -18,6 +18,7 @@ import { NextRequest } from "next/server";
 import { playDealerGame } from "./cards";
 const SEND_PUBKEY = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
+
 export const getGame = (): NextActionLink => {
   console.log("IN get Game Yoo");
   return {
@@ -74,133 +75,6 @@ export const getGame2 = (): NextActionLink => {
     },
   };
 };
-
-export const raiseSend = (type, card, value, amount): NextActionLink => {
-  console.log("IN get Game");
-  return {
-    type: "inline",
-    action: {
-      description: `You'll always miss 100% of the shots you don't take.`,
-      icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
-      label: `Enter Send to Raise Bet with, your current card is ${card}`,
-      title: `Only a CHAD can raise the bet`,
-      type: "action",
-      links: {
-        actions: [
-          {
-            label: `Bet`, // button text
-            href: `/api/game?send={sendNum}&typeRaise=raise&card=${card}&type=${type}&value=${value}&amount=${amount}`, // api endpoint
-            parameters: [
-              {
-                name: "sendNum", // field name
-                label: "Enter SEND Amount", // text input placeholder
-              },
-            ],
-          },
-        ],
-      },
-    },
-  };
-};
-
-export const raiseSendForSecondGame = (value, card, amount): NextActionLink => {
-  console.log("IN get Game");
-  return {
-    type: "inline",
-    action: {
-      description: `You'll always miss 100% of the shots you don't take.`,
-      icon: "https://ucarecdn.com/47e639fa-cb3a-4894-91be-087aa770df57/Pinpageimage.jpeg", // Local icon path
-      label: `Enter Send to Raise Bet with`,
-      title: `Your current cards are ${card}`,
-      type: "action",
-      links: {
-        actions: [
-          {
-            label: `Bet`, // button text
-            href: `/api/game?send={sendNum}&typeRaise=raise&card=${card}&gameNo=2&value=${value}&amount=${amount}`, // api endpoint
-            parameters: [
-              {
-                name: "sendNum", // field name
-                label: "Enter SEND Amount", // text input placeholder
-              },
-            ],
-          },
-        ],
-      },
-    },
-  };
-};
-
-export async function TransactionBuilder(userAccount, amount) {
-  let account = new PublicKey(userAccount);
-
-  console.log("In Tx builder," + account, amount);
-  const connection = new Connection(
-    process.env.RPC || clusterApiUrl("mainnet-beta")
-  );
-  const decimals = 6; // In the example, we use 6 decimals for USDC, but you can use any SPL token
-  const mintAddress = new PublicKey(SEND_PUBKEY); // replace this with any SPL token mint address
-
-  // converting value to fractional units
-
-  let transferAmount: any = parseFloat(amount);
-  transferAmount = transferAmount.toFixed(decimals);
-  transferAmount = transferAmount * Math.pow(10, decimals);
-
-  const fromTokenAccount = await splToken.getAssociatedTokenAddress(
-    mintAddress,
-    account,
-    false,
-    splToken.TOKEN_PROGRAM_ID,
-    splToken.ASSOCIATED_TOKEN_PROGRAM_ID
-  );
-
-  let toTokenAccount = await splToken.getAssociatedTokenAddress(
-    mintAddress,
-    toPubkey,
-    true,
-    splToken.TOKEN_PROGRAM_ID,
-    splToken.ASSOCIATED_TOKEN_PROGRAM_ID
-  );
-
-  const ifexists = await connection.getAccountInfo(toTokenAccount);
-
-  let instructions = [];
-
-  if (!ifexists || !ifexists.data) {
-    let createATAiX = splToken.createAssociatedTokenAccountInstruction(
-      account,
-      toTokenAccount,
-      toPubkey,
-      mintAddress,
-      splToken.TOKEN_PROGRAM_ID,
-      splToken.ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-    instructions.push(createATAiX);
-  }
-
-  let transferInstruction = splToken.createTransferInstruction(
-    fromTokenAccount,
-    toTokenAccount,
-    account,
-    transferAmount
-  );
-  instructions.push(transferInstruction);
-
-  const transaction = new Transaction();
-  transaction.feePayer = account;
-
-  transaction.add(...instructions);
-
-  // set the end user as the fee payer
-  transaction.feePayer = account;
-
-  transaction.recentBlockhash = (
-    await connection.getLatestBlockhash()
-  ).blockhash;
-
-  return transaction;
-}
 
 export const startGame = (req, amount: number): NextActionLink => {
   let userCard = getUserCard();
@@ -407,9 +281,9 @@ export const endSecondGame = (
   card,
   amount
 ): NextActionLink => {
-  let dealerCard = getDealerCard();
+  let dealerCard = playDealerGame();
 
-  const dealerCardsArray = dealerCard.card
+  const dealerCardsArray = dealerCard.cards
     .split(",")
     .map((card: any) => card.trim());
   const abbreviatedDealerCards = dealerCardsArray
@@ -419,13 +293,12 @@ export const endSecondGame = (
     })
     .join(",");
 
-  let dealer = playDealerGame();
   let playerValue = Number(value);
-  let dealerValue = dealer.value;
+  let dealerValue = dealerCard.value;
   let cardStatus;
   console.log(`Players Amount : ${amount}`);
   console.log(
-    `Dealer cards : ${dealer.cards} (value: ${dealerValue}), ${abbreviatedDealerCards}`
+    `Dealer cards : ${dealerCard.cards} (value: ${dealerValue}), ${abbreviatedDealerCards}`
   );
 
   let status = 0;
@@ -495,7 +368,7 @@ export const endSecondGame = (
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
         label: `Congratulations, ${cardStatus}`,
-        title: `Dealer had ${dealer.cards} (value: ${dealerValue}), Your payout will automatically be sent to your account`,
+        title: `Dealer had ${dealerCard.cards} (value: ${dealerValue}), Your payout will automatically be sent to your account`,
         type: "completed",
       },
     };
@@ -506,7 +379,7 @@ export const endSecondGame = (
         description: `The only sure thing about luck is that it will change.`,
         icon: ogImageUrl,
         label: `Sorry, You Lost`,
-        title: `Dealer had: ${dealer.cards} (value: ${dealerValue}), Wanna play again?`,
+        title: `Dealer had: ${dealerCard.cards} (value: ${dealerValue}), Wanna play again?`,
         type: "completed",
       },
     };

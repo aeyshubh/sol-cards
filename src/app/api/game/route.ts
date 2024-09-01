@@ -286,7 +286,7 @@ export async function POST(request: Request) {
     let usersCard = requestUrl.searchParams.get("userCard");
 
     //Send raiseAmount to squads
-    if (bet == "raise") {
+    if (bet == "raise" && Number(raiseAmount) > 0) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
@@ -305,6 +305,7 @@ export async function POST(request: Request) {
     }
     //end second game with no raise
     else {
+      console.log("hereee");
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
@@ -321,147 +322,5 @@ export async function POST(request: Request) {
       });
       return res;
     }
-  } else if (
-    request.url.includes("send") &&
-    request.url.includes("typeRaise") &&
-    request.url.includes("gameNo") &&
-    request.url.includes("card") &&
-    request.url.includes("value")
-  ) {
-    //get send from user
-    let amount = requestUrl.searchParams.get("send"); //Raise Amount
-    let amountToSend = requestUrl.searchParams.get("amount"); // Old amount
-    let raiseAmount = requestUrl.searchParams.get("send"); // Raised amount
-    let card = requestUrl.searchParams.get("card");
-    let value = requestUrl.searchParams.get("value");
-
-    let dealer = playDealerGame();
-    let playerValue = Number(value);
-    let dealerValue = dealer.value;
-    let cardStatus;
-    console.log(`Players Amount : ${amount}`);
-    console.log(`Dealer cards : ${dealer.cards} (value: ${dealerValue})`);
-
-    let status = 0;
-    if (playerValue > 21 && dealerValue > 21) {
-      cardStatus = "Both bust";
-      //return Payment
-      status = 1;
-    } else if (playerValue > 21) {
-      cardStatus = "Player busts! Dealer wins.";
-      //Exit
-    } else if (dealerValue > 21) {
-      cardStatus = "Dealer busts! Player wins.";
-      //Send Payment
-      status = 2;
-    } else if (playerValue > dealerValue) {
-      cardStatus = "Player wins!";
-      //send Payment
-      status = 2;
-    } else if (dealerValue > playerValue) {
-      cardStatus = "Dealer wins!";
-      //Exit
-    } else {
-      cardStatus = "Both Busts";
-      //Return Payment
-      status = 1;
-    }
-
-    let txAmount;
-    if (status == 1) {
-      txAmount = 1;
-    } else if (status == 2) {
-      txAmount = 3;
-    } else {
-      txAmount = 0;
-    }
-
-    // Transfer SEND from squads to Winner if win
-
-    const payload: ActionPostResponse = await createPostResponse({
-      fields: {
-        links: {
-          next: endSecondGame(
-            request,
-            sender,
-            value,
-            card,
-            amountToSend,
-            dealer,
-            status,
-            cardStatus
-          ),
-        },
-        transaction: tx,
-        message: `Raising Send`,
-      },
-      // note: no additional signers are needed
-      // signers: [],
-    });
-    const res = Response.json(payload, {
-      headers: ACTIONS_CORS_HEADERS,
-    });
-    return res;
-  }
-  //end of first game in raise condition
-  else if (request.url.includes("typeRaise")) {
-    let type = requestUrl.searchParams.get("type");
-    let getcard = requestUrl.searchParams.get("card");
-    let getValue = requestUrl.searchParams.get("value");
-    let amount = requestUrl.searchParams.get("amount");
-    let raiseAmount = requestUrl.searchParams.get("send");
-
-    let dealerCard = getDealerCard();
-    console.log("Dealer Card", dealerCard);
-    let userWinStatus = determineWinner(getcard, dealerCard, type);
-    console.log("User Win Status", userWinStatus);
-    console.log("Users card :", getcard, "dealer card :", dealerCard);
-    console.log(`Users Amount is ${amount}`);
-
-    let squadsPubKey = new PublicKey(
-      "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-    );
-    let connection = new Connection(clusterApiUrl("mainnet-beta"));
-
-    const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
-
-    const payer = base58ToKeypair(privateKeyBase58);
-
-    let txAmount;
-
-    if (userWinStatus === 1) {
-      //fix this
-      txAmount = Number(3);
-    } else if (userWinStatus == 2) {
-      txAmount = 0;
-    } else {
-      //fix this
-      txAmount = Number(1);
-    }
-
-    const transaction = await transferSplToSquadsTx({
-      connection,
-      payer,
-      sender,
-      squadsPubKey,
-      amount: Number(raiseAmount),
-    });
-
-    const payload: ActionPostResponse = await createPostResponse({
-      fields: {
-        links: {
-          next: endGame(getcard, type, getValue, request, sender, amount),
-        },
-        transaction: transaction,
-        message: `Bet`,
-      },
-      // note: no additional signers are needed
-      // signers: [],
-    });
-
-    const res = Response.json(payload, {
-      headers: ACTIONS_CORS_HEADERS,
-    });
-    return res;
   }
 }
