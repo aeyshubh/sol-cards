@@ -83,8 +83,8 @@ export const startGame = (req, amount: number): NextActionLink => {
 
   // Ensure the host is defined (for example, in a serverless environment)
   const origin = req.headers.host
-    ? `http://${req.headers.host}`
-    : "http://localhost:3000";
+    ? `https://solcards.hishubh.com`
+    : "https://solcards.hishubh.com";
 
   // Construct the full URL for the OG image
   const iconUrl = new URL(
@@ -129,8 +129,8 @@ export const startGame2 = (req, cards, value, amount): NextActionLink => {
     .join(","); // Join the abbreviations into a comma-separated string without spaces
 
   const origin = req.headers.host
-    ? `http://${req.headers.host}`
-    : "http://localhost:3000";
+    ? `https://solcards.hishubh.com`
+    : "https://solcards.hishubh.com";
 
   // Construct the full URL for the OG image
   const ogImageUrl = new URL(
@@ -224,8 +224,8 @@ export const endGame = (
   const user_card = getCardAbbreviation(new Card(value, suit));
 
   const origin = request.headers.host
-    ? `http://${request.headers.host}`
-    : "http://localhost:3000";
+    ? `https://solcards.hishubh.com`
+    : "https://solcards.hishubh.com";
   const ogImageUrl = new URL(
     `/api/end-og?dealer_card=${dealerCard.card_face}&user_card=${user_card}`,
     origin
@@ -342,8 +342,8 @@ export const endSecondGame = (
   });
 
   const origin = request.headers.host
-    ? `http://${request.headers.host}`
-    : "http://localhost:3000";
+    ? `https://solcards.hishubh.com`
+    : "https://solcards.hishubh.com";
   const ogImageUrl = new URL(
     `/api/end-og?dealer_card=${abbreviatedDealerCards}&user_card=${card}`,
     origin
