@@ -3,53 +3,27 @@ import {
   createPostResponse,
   ActionGetResponse,
   ActionPostRequest,
-  createActionHeaders,
   ACTIONS_CORS_HEADERS,
 } from "@solana/actions";
-import { BlinksightsClient } from "blinksights-sdk";
-import {
-  createTransferInstruction,
-  getOrCreateAssociatedTokenAccount,
-  TOKEN_PROGRAM_ID,
-  transfer,
-} from "@solana/spl-token";
+
 import {
   Connection,
   clusterApiUrl,
   PublicKey,
   SystemProgram,
   Transaction,
-  TransactionInstruction,
-  sendAndConfirmTransaction,
-  Keypair,
   LAMPORTS_PER_SOL,
-  Account,
-  TransactionCtorFields,
-  TransactionSignature,
 } from "@solana/web3.js";
-import { NextActionLink } from "@solana/actions-spec";
 import "dotenv/config";
 import {
-  getGame,
   startGame,
-  TransactionBuilder,
   endGame,
   raise,
-  raiseSend,
-  getGame2,
   startGame2,
-  raiseSendForSecondGame,
   endSecondGame,
 } from "@/app/helper";
 import { playDealerGame, playUserGame } from "@/app/cards";
-import {
-  Card,
-  determineWinner,
-  getCardAbbreviation,
-  getDealerCard,
-  getUserCard,
-} from "@/app/game1";
-import { send } from "process";
+import { determineWinner, getDealerCard } from "@/app/game1";
 import {
   base58ToKeypair,
   transferSplFromSquadsTx,
@@ -77,11 +51,11 @@ export async function GET(request: Request) {
     return res;
   } else {
     const payload: ActionGetResponse = {
-      description: `You'll always miss 100% of the shots you don't take.`,
+      description: `Enter Game np below👇 \n1. High-Low Card   2.Near to 21 `,
       icon: new URL(localIconPath, url.origin).toString(), // Local icon path
 
       label: `Select a Game to play`,
-      title: `Welcome to the Game`,
+      title: `SOL CARDS`,
       type: "action",
       links: {
         actions: [
@@ -160,7 +134,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: startGame(request, amount),
+            next: startGame(request, Number(amount)),
           },
           transaction: transaction,
           message: `Sending Send`,
@@ -172,7 +146,9 @@ export async function POST(request: Request) {
         headers: ACTIONS_CORS_HEADERS,
       });
       return res;
-    } else {
+    }
+    //game2
+    else {
       const transaction = await transferSplToSquadsTx({
         connection,
         payer,
@@ -248,7 +224,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endGame(getcard, type,getValue,request),
+            next: endGame(getcard, type, getValue, request, sender, amount),
           },
           transaction: tx,
           message: `Bet`,
@@ -266,10 +242,11 @@ export async function POST(request: Request) {
       let getcard = requestUrl.searchParams.get("card");
       let getValue = requestUrl.searchParams.get("value");
       let amount = requestUrl.searchParams.get("amount");
+
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endGame(getcard, type,getValue,request),
+            next: endGame(getcard, type, getValue, request, sender, amount),
           },
           transaction: tx,
           message: `Bet`,
@@ -283,9 +260,7 @@ export async function POST(request: Request) {
       });
       return res;
     }
-  } else if (
-    request.url.includes("raiseAmt") 
-  ) {
+  } else if (request.url.includes("raiseAmt")) {
     let bet = requestUrl.searchParams.get("bet");
     let value = requestUrl.searchParams.get("value");
     let card = requestUrl.searchParams.get("card");
@@ -298,7 +273,7 @@ export async function POST(request: Request) {
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endSecondGame(value,card,request,amount),
+            next: endSecondGame(value, card, request, amount),
           },
           transaction: tx,
           message: `Bet`,
@@ -441,7 +416,7 @@ export async function POST(request: Request) {
       txAmount = 0;
     }
 
-// Transfer SEND from squads to Winner if win
+    // Transfer SEND from squads to Winner if win
 
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
@@ -514,16 +489,7 @@ export async function POST(request: Request) {
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         links: {
-          next: endGame(
-            request,
-            type,
-            getcard,
-            getValue,
-            amount,
-            sender,
-            dealerCard,
-            userWinStatus
-          ),
+          next: endGame(getcard, type, getValue, request, sender, amount),
         },
         transaction: transaction,
         message: `Bet`,

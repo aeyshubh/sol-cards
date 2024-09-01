@@ -81,14 +81,15 @@ export async function transferSplFromSquadsTx({
   // connection,
   // payer,
   sender,
+  amount,
 }: // squadsPubKey,
-// amount,
+
 {
   // connection: Connection;
   // payer: Keypair;
   sender: PublicKey;
   // squadsPubKey: PublicKey;
-  // amount: Number;
+  amount: Number;
 }) {
   try {
     const connection = new Connection(
@@ -128,7 +129,7 @@ export async function transferSplFromSquadsTx({
       senderTokenAccount.address,
       receiverTokenAccount.address,
       vaultPda,
-      1 * 1000000,
+      Number(amount) * Math.pow(10, 6),
       [],
       TOKEN_PROGRAM_ID
     );
@@ -218,7 +219,7 @@ export async function transferSplFromSquadsTx({
     proposalTx.add(approveProposalResult);
     proposalTx.add(executeProposalIx);
 
-    proposalTx.feePayer = sender;
+    proposalTx.feePayer = payer.publicKey;
     proposalTx.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
@@ -237,7 +238,7 @@ export async function transferSplFromSquadsTx({
       }
     );
 
-    console.log("✅ Transaction executed:", signature);
+    // console.log("✅ Transaction executed:", signature);
     return sign;
   } catch (error) {
     console.log(error);

@@ -326,12 +326,19 @@ export const raise = (type, card, value, amount): NextActionLink => {
   };
 };
 
-export const endGame = (card,type,value,request): NextActionLink => {
+export const endGame = (
+  card,
+  type,
+  value,
+  request,
+  sender,
+  amount
+): NextActionLink => {
   //Change wining status acc to high or low
-   let dealerCard = getDealerCard();
-   console.log("Dealer Card", dealerCard);
-   let userWinStatus = determineWinner(card, dealerCard, type);
-   console.log("User Win Status", userWinStatus);
+  let dealerCard = getDealerCard();
+  console.log("Dealer Card", dealerCard);
+  let userWinStatus = determineWinner(card, dealerCard, type);
+  console.log("User Win Status", userWinStatus);
   // console.log("Users card :", card, "dealer card :", dealerCard);
   // console.log(`Users Amount is ${amount}`);
 
@@ -348,15 +355,6 @@ export const endGame = (card,type,value,request): NextActionLink => {
     origin
   ).toString();
 
-  // let squadsPubKey = new PublicKey(
-  //   "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-  // );
-  // let connection = new Connection(clusterApiUrl("mainnet-beta"));
-
-  // const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
-
-  // const payer = base58ToKeypair(privateKeyBase58);
-
   if (userWinStatus == 1) {
     //@todo: arpita send send(param:amount) from squads to user
     // const signature = await transferSplFromSquadsTx({
@@ -366,22 +364,23 @@ export const endGame = (card,type,value,request): NextActionLink => {
     //   squadsPubKey,
     //   amount: Number(amount * 2 - amount * 2 * 0.069),
     // });
+
+    const signature = transferSplFromSquadsTx({
+      sender,
+
+      amount: Number(Number(amount) * 2 - Number(amount) * 2 * 0.069),
+    });
+    if (!signature) {
+      throw Error("in signature");
+    }
     return {
       type: "inline",
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
         label: `Congratulations,You Won`,
-        title: `Dealer had ${dealerCard},Your payout will automatically be sent to your account in 5 minutes`,
+        title: `Dealer had ${dealerCard.card},Your payout will automatically be sent to your account in 5 minutes`,
         type: "completed",
-        // links: {
-        //   actions: [
-        //     {
-        //       label: `Claim Prize`, // button text
-        //       href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-        //     },
-        //   ],
-        // },
       },
     };
   } else if (userWinStatus == 2) {
@@ -395,37 +394,10 @@ export const endGame = (card,type,value,request): NextActionLink => {
         type: "completed",
       },
     };
-  } else {
-    //@todo: arpita send send(param:amount/2) from squads to user
-    // const signature = transferSplFromSquadsTx({
-    //   connection,
-    //   payer,
-    //   sender,
-    //   squadsPubKey,
-    //   amount: Number(amount - amount * 0.069),
-    // });
-    return {
-      type: "inline",
-      action: {
-        description: `Wow,It's a TIE,we will send your bet back to your account`,
-        icon: ogImageUrl,
-        label: `It's a TIE`,
-        title: `both have ${card},Wanna play again?`,
-        type: "completed",
-        // links: {
-        //   actions: [
-        //     {
-        //       label: `Claim Prize`, // button text
-        //       href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-        //     },
-        //   ],
-        // },
-      },
-    };
   }
 };
 
-export const endSecondGame = (value,card,request,amount): NextActionLink => {
+export const endSecondGame = (value, card, request, amount): NextActionLink => {
   let dealerCard = getDealerCard();
 
   const dealerCardsArray = dealerCard.card
@@ -446,7 +418,7 @@ export const endSecondGame = (value,card,request,amount): NextActionLink => {
     origin
   ).toString();
 
-  let status = 1
+  let status = 1;
   if (status == 1) {
     //@todo: arpita send send(param:amount/2) from squads to user
     return {
@@ -484,5 +456,3 @@ export const endSecondGame = (value,card,request,amount): NextActionLink => {
     };
   }
 };
-
-// Function to generate a random card
