@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { NextActionLink } from "@solana/actions-spec";
 import * as splToken from "@solana/spl-token";
 import {

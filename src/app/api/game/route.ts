@@ -287,12 +287,25 @@ export async function POST(request: Request) {
 
     //Send raiseAmount to squads
     if (bet == "raise" && Number(raiseAmount) > 0) {
+      const transaction = await transferSplToSquadsTx({
+        connection,
+        payer,
+        sender,
+        squadsPubKey,
+        amount: Number(raiseAmount),
+      });
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
-            next: endSecondGame(request, sender, value, card, amount),
+            next: endSecondGame(
+              request,
+              sender,
+              value,
+              card,
+              Number(amount) + Number(raiseAmount)
+            ),
           },
-          transaction: tx,
+          transaction: transaction,
           message: `Bet`,
         },
         // note: no additional signers are needed
