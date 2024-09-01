@@ -14,7 +14,7 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 import bs58 from "bs58";
-
+//@ts-ignore
 import * as multisig from "@sqds/multisig";
 
 export function base58ToKeypair(base58PrivateKey: string): Keypair {
