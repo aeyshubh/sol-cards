@@ -110,7 +110,6 @@ export async function transferSplFromSquadsTx({
       vaultPda,
       true
     );
-
     const receiverTokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       payer,

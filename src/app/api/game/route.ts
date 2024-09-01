@@ -5,7 +5,11 @@ import {
   ActionPostRequest,
   ACTIONS_CORS_HEADERS,
 } from "@solana/actions";
-
+import {
+  createTransferInstruction,
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import {
   Connection,
   clusterApiUrl,
@@ -15,6 +19,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import "dotenv/config";
+import * as multisig from "@sqds/multisig";
 import {
   startGame,
   endGame,
@@ -33,17 +38,40 @@ import { BlinksightsClient } from "blinksights-sdk";
 const client = new BlinksightsClient(process.env.METKEY as string);
 
 export async function GET(request: Request) {
+  let connection = new Connection(
+    process.env.NEXT_PUBLIC_RPC || clusterApiUrl("mainnet-beta")
+  );
+
   const url = new URL(request.url);
   const localIconPath = "/images/poker-table2.png";
-  let balance = 10;
   //@todo:fetch squads send balance
   //also compare the bet*2 money is there in squads
-  if (balance == 0) {
+  const multisigPda = new PublicKey(
+    process.env.NEXT_PUBLIC_SQUAD_KEY as string
+  );
+  const [vaultPda] = multisig.getVaultPda({
+    multisigPda,
+    index: 0,
+  });
+  const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+
+  const payer = base58ToKeypair(privateKeyBase58);
+  const senderTokenAccount2 = await getOrCreateAssociatedTokenAccount(
+    connection,
+    payer,
+    new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
+    vaultPda,
+    true
+  );
+  let balance = Number(senderTokenAccount2.amount)/10**6;
+  console.log("Token Account"+(balance)); 
+  if (balance < 100) {
+
     const payload: ActionGetResponse = {
       icon: new URL(localIconPath, url.origin).toString(), // Local icon path
       label: "Liquidity Issue",
       title: `Less liquidity in the Pool`,
-      description: `Available Liquidity is ${balance} USDC which is less than the required to payout if you win!`,
+      description: `Available Liquidity is ${balance} SEND which is less than the required to payout if you win!`,
       type: "action",
     };
     const res = Response.json(payload, {
