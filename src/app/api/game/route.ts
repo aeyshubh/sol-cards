@@ -29,7 +29,8 @@ import {
   transferSplFromSquadsTx,
   transferSplToSquadsTx,
 } from "@/app/utils";
-//const client = new BlinksightsClient(process.env.METKEY);
+import { BlinksightsClient } from "blinksights-sdk";
+const client = new BlinksightsClient(process.env.METKEY);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
       },
     };
 
-    // client.trackRenderV1(request.url, payload);
+    client.trackRenderV1(request.url, payload);
     const res = Response.json(payload, {
       headers: ACTIONS_CORS_HEADERS,
     });
@@ -89,7 +90,7 @@ export const OPTIONS = GET; // OPTIONS request handler
 
 export async function POST(request: Request) {
   const body: ActionPostRequest = await request.json();
-
+  client.trackActionV1(request.headers, body.account, request.url);
   let connection = new Connection(
     process.env.NEXT_PUBLIC_RPC || clusterApiUrl("mainnet-beta")
   );
@@ -505,6 +506,7 @@ export async function POST(request: Request) {
       // note: no additional signers are needed
       // signers: [],
     });
+
     const res = Response.json(payload, {
       headers: ACTIONS_CORS_HEADERS,
     });
