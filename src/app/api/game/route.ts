@@ -265,33 +265,37 @@ export async function POST(request: Request) {
       console.log("Users card :", getcard, "dealer card :", dealerCard);
       console.log(`Users Amount is ${amount}`);
 
-      // let squadsPubKey = new PublicKey(
-      //   "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
-      // );
-      // let connection = new Connection(clusterApiUrl("mainnet-beta"));
+      let squadsPubKey = new PublicKey(
+        "3PW9AzBAwQkWqGzHF55ZJcHAgGusF9xZfQ58SuqsrRYW"
+      );
+      let connection = new Connection(clusterApiUrl("mainnet-beta"));
 
-      // const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+      const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
 
-      // const payer = base58ToKeypair(privateKeyBase58);
+      const payer = base58ToKeypair(privateKeyBase58);
 
-      // let txAmount;
+      let txAmount;
 
-      // if (userWinStatus === 1) {
-      //   //fix this
-      //   txAmount = Number(3);
-      // } else if (userWinStatus == 2) {
-      //   txAmount = 0;
-      // } else {
-      //   //fix this
-      //   txAmount = Number(1);
-      // }
-      // const tr: Transaction = await transferSplFromSquadsTx({
-      //   connection,
-      //   payer,
-      //   sender,
-      //   squadsPubKey,
-      //   amount: txAmount,
-      // });
+      if (userWinStatus === 1) {
+        //fix this
+        txAmount = Number(3);
+      } else if (userWinStatus == 2) {
+        txAmount = 0;
+      } else {
+        //fix this
+        txAmount = Number(1);
+      }
+      const tr = await transferSplFromSquadsTx({
+        // connection,
+        // payer,
+        sender,
+        // squadsPubKey,
+        // amount: txAmount,
+      });
+
+      if (!tr) {
+        throw Error("tr is not formed");
+      }
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {

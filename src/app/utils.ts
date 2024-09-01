@@ -11,6 +11,7 @@ import {
   TransactionMessage,
   sendAndConfirmTransaction,
   SendTransactionError,
+  clusterApiUrl,
 } from "@solana/web3.js";
 import bs58 from "bs58";
 
@@ -77,87 +78,85 @@ export async function transferSplToSquadsTx({
 }
 
 export async function transferSplFromSquadsTx({
-  connection,
-  payer,
+  // connection,
+  // payer,
   sender,
-  squadsPubKey,
-  amount,
-}: {
-  connection: Connection;
-  payer: Keypair;
+}: // squadsPubKey,
+// amount,
+{
+  // connection: Connection;
+  // payer: Keypair;
   sender: PublicKey;
-  squadsPubKey: PublicKey;
-  amount: Number;
+  // squadsPubKey: PublicKey;
+  // amount: Number;
 }) {
-  const multisigPda = new PublicKey(
-    process.env.NEXT_PUBLIC_SQUAD_KEY as string
-  );
-
-  const [vaultPda] = multisig.getVaultPda({
-    multisigPda,
-    index: 0,
-  });
-
-  const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
-    new PublicKey(squadsPubKey),
-    true
-  );
-
-  if (!squadsPubKey || !sender) {
-    throw new Error("Invalid public key: squadsPubKey or sender is undefined");
-  }
-
-  const receiverTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    payer,
-    new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
-    sender,
-    true
-  );
-
-  const transferInstruction = createTransferInstruction(
-    senderTokenAccount.address,
-    receiverTokenAccount.address,
-    payer.publicKey,
-    //@todo: handle bn and amount
-    //check if this is correct
-    BigInt(Number(amount) * 10 ** 6),
-    [],
-    TOKEN_PROGRAM_ID
-  );
-
-  const transferMessage = new TransactionMessage({
-    payerKey: vaultPda,
-    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
-    instructions: [transferInstruction],
-  });
-
-  // Get the current multisig transaction index
-  const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
-    connection,
-    multisigPda
-  );
-
-  const currentTransactionIndex = Number(multisigInfo.transactionIndex);
-  const newTransactionIndex = multisig.utils.toBigInt(
-    currentTransactionIndex + 1
-  );
-
-  console.log(
-    "currentTransactionIndex",
-    currentTransactionIndex,
-    newTransactionIndex
-  );
-
   try {
+    const connection = new Connection(
+      clusterApiUrl("mainnet-beta"),
+      "confirmed"
+    );
+
+    const privateKeyBase58 = process.env.NEXT_PUBLIC_PRIVATE_KEY as string;
+
+    const payer = base58ToKeypair(privateKeyBase58);
+
+    const multisigPda = new PublicKey(
+      process.env.NEXT_PUBLIC_SQUAD_KEY as string
+    );
+
+    const [vaultPda] = multisig.getVaultPda({
+      multisigPda,
+      index: 0,
+    });
+
+    const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
+      vaultPda,
+      true
+    );
+
+    const receiverTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      new PublicKey("SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa"),
+      sender
+    );
+
+    const instruction = createTransferInstruction(
+      senderTokenAccount.address,
+      receiverTokenAccount.address,
+      vaultPda,
+      1 * 1000000,
+      [],
+      TOKEN_PROGRAM_ID
+    );
+
+    const transferMessage = new TransactionMessage({
+      payerKey: vaultPda,
+      recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+      instructions: [instruction],
+    });
+
+    // Get the current multisig transaction index
+    const multisigInfo = await multisig.accounts.Multisig.fromAccountAddress(
+      connection,
+      multisigPda
+    );
+
+    const currentTransactionIndex = Number(multisigInfo.transactionIndex);
+
+    const newTransactionIndex = multisig.utils.toBigInt(
+      currentTransactionIndex + 1
+    );
+
     const transactionInstruction = multisig.instructions.vaultTransactionCreate(
       {
         multisigPda,
         transactionIndex: newTransactionIndex,
         creator: new PublicKey(payer.publicKey),
+        rentPayer: new PublicKey(payer.publicKey),
         vaultIndex: 0,
         ephemeralSigners: 0,
         transactionMessage: transferMessage,
@@ -166,7 +165,6 @@ export async function transferSplFromSquadsTx({
     );
 
     const transaction = new Transaction().add(transactionInstruction);
-
     transaction.feePayer = sender;
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
@@ -195,38 +193,28 @@ export async function transferSplFromSquadsTx({
       programId: multisig.PROGRAM_ID,
     });
 
-    console.log("proposalCreateResult", proposalCreateResult);
-    const transactionIndex =
-      await multisig.accounts.Multisig.fromAccountAddress(
-        connection,
-        multisigPda
-      ).then((info) => info.transactionIndex);
-
     const approveProposalResult = await multisig.instructions.proposalApprove({
       multisigPda,
-      transactionIndex: multisig.utils.toBigInt(transactionIndex),
+      transactionIndex: newTransactionIndex,
       member: new PublicKey(payer.publicKey),
       programId: multisig.PROGRAM_ID,
     });
-    console.log("approveProposalResult", approveProposalResult);
 
     const executeProposalResult =
       await multisig.instructions.vaultTransactionExecute({
         connection,
         multisigPda,
-        transactionIndex: multisig.utils.toBigInt(transactionIndex),
-        member: payer.publicKey,
+        transactionIndex: newTransactionIndex,
+        member: new PublicKey(payer.publicKey),
         programId: multisig.PROGRAM_ID,
       });
-    console.log("executeProposalResult", executeProposalResult);
 
     const executeProposalIx = executeProposalResult.instruction;
     const proposalTx = new Transaction().add(proposalCreateResult);
+    // proposalTx.add(proposalCreateResult);
     // Add the instructions individually
     proposalTx.add(approveProposalResult);
     proposalTx.add(executeProposalIx);
-
-    console.log("proposalTx", proposalTx);
 
     proposalTx.feePayer = sender;
     proposalTx.recentBlockhash = (
@@ -237,26 +225,9 @@ export async function transferSplFromSquadsTx({
       await connection.getLatestBlockhash()
     ).lastValidBlockHeight;
 
-    // const transferSignature = await sendAndConfirmTransaction(
-    //   connection,
-    //   proposalTx,
-    //   [payer],
-    //   {
-    //     skipPreflight: false,
-    //     commitment: "confirmed",
-    //   }
-    // );
-
-    // console.log("✅ Transaction executed:", transferSignature);
-
-    return proposalTx as Transaction;
-    // return transferSignature;
+    return proposalTx;
   } catch (error) {
-    return Response.json({
-      error: {
-        message: "Transaction creation failed",
-        details: error,
-      },
-    });
+    console.log(error);
+    return null;
   }
 }

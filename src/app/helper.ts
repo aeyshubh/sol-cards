@@ -322,8 +322,8 @@ export const endGame = (
   amount,
   sender,
   dealerCard,
-  userWinStatus,
-  winAmount
+  userWinStatus
+  // winAmount
 ): NextActionLink => {
   //Change wining status acc to high or low
   // let dealerCard = getDealerCard();
@@ -371,15 +371,15 @@ export const endGame = (
         icon: ogImageUrl,
         label: `Congratulations,You Won`,
         title: `Dealer had ${dealerCard},Your payout will automatically be sent to your account in 5 minutes`,
-        type: "action",
-        links: {
-          actions: [
-            {
-              label: `Claim Prize`, // button text
-              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-            },
-          ],
-        },
+        type: "completed",
+        // links: {
+        //   actions: [
+        //     {
+        //       label: `Claim Prize`, // button text
+        //       href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+        //     },
+        //   ],
+        // },
       },
     };
   } else if (userWinStatus == 2) {
@@ -409,15 +409,15 @@ export const endGame = (
         icon: ogImageUrl,
         label: `It's a TIE`,
         title: `both have ${card},Wanna play again?`,
-        type: "action",
-        links: {
-          actions: [
-            {
-              label: `Claim Prize`, // button text
-              href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
-            },
-          ],
-        },
+        type: "completed",
+        // links: {
+        //   actions: [
+        //     {
+        //       label: `Claim Prize`, // button text
+        //       href: `/api/game?gameNo=1&winningAmount=${winAmount}`, // api endpoint
+        //     },
+        //   ],
+        // },
       },
     };
   }
