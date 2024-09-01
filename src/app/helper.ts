@@ -6,7 +6,6 @@ import {
   PublicKey,
   Transaction,
 } from "@solana/web3.js";
-import { playDealerGame, playUserGame } from "@/app/cards";
 import {
   getDealerCard,
   getUserCard,
@@ -14,7 +13,7 @@ import {
   Card,
   getCardAbbreviation,
 } from "@/app/game1";
-import { base58ToKeypair, transferSplFromSquadsTx } from "./utils";
+import { transferSplFromSquadsTx } from "./utils";
 const SEND_PUBKEY = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 let toPubkey = new PublicKey("3GD3Ks19SCeor3n4qrJ3VjGRooeMii7FYvb24EaMRae5");
 export const getGame = (): NextActionLink => {
@@ -219,7 +218,7 @@ export const startGame = (req, amount: number): NextActionLink => {
   return {
     type: "inline",
     action: {
-      description: `You can select whether you want to bet on High card/Low card. If you bet on High card and you have a higher card than the dealer, then you win.`,
+      description: `You can select whether you want to bet on High card/Low card. If you bet on High card and you have a higher card than the dealer, then you win. \n In case of same cards: ♠️>♦️>♣️>♥️`,
       icon: iconUrl, // Use the constructed full URL
       label: ``,
       title: `You got ${userCard?.card}`,
@@ -379,7 +378,9 @@ export const endGame = (
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
         label: `Congratulations,You Won`,
-        title: `Dealer had ${dealerCard.card},Your payout will automatically be sent to your account in 5 minutes`,
+        title: `Dealer had ${dealerCard.card},Your payout ${Number(
+          Number(amount) * 2 - Number(amount) * 2 * 0.069
+        )}SEND is sent to your wallet`,
         type: "completed",
       },
     };

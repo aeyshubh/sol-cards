@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     return res;
   } else {
     const payload: ActionGetResponse = {
-      description: `Enter Game np below👇 \n1. High-Low Card   2.Near to 21 `,
+      description: `Enter Game No. below👇 \n1. High-Low Card   2.Near to 21 `,
       icon: new URL(localIconPath, url.origin).toString(), // Local icon path
 
       label: `Select a Game to play`,
