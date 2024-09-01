@@ -300,6 +300,7 @@ export async function POST(request: Request) {
       }
 
       console.log("tr", tr);
+
       const payload: ActionPostResponse = await createPostResponse({
         fields: {
           links: {
@@ -314,12 +315,13 @@ export async function POST(request: Request) {
               userWinStatus
             ),
           },
-          transaction: tr,
+          transaction: tx,
           message: `Bet`,
         },
         // note: no additional signers are needed
         // signers: [],
       });
+
       const res = Response.json(payload, {
         headers: ACTIONS_CORS_HEADERS,
       });

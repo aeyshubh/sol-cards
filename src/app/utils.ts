@@ -227,7 +227,18 @@ export async function transferSplFromSquadsTx({
       await connection.getLatestBlockhash()
     ).lastValidBlockHeight;
 
-    return proposalTx;
+    const sign = await sendAndConfirmTransaction(
+      connection,
+      proposalTx,
+      [payer],
+      {
+        skipPreflight: false,
+        commitment: "confirmed",
+      }
+    );
+
+    console.log("✅ Transaction executed:", signature);
+    return sign;
   } catch (error) {
     console.log(error);
     return null;
