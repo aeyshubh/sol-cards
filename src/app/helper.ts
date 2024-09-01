@@ -350,26 +350,30 @@ export const endSecondGame = (
   ).toString();
 
   if (status == 1) {
-    //@todo: arpita send send(param:amount/2) from squads to user
     return {
       type: "inline",
       action: {
         description: `Both Bust`,
         icon: ogImageUrl,
         label: `It's a bust`,
-        title: `Your payout will automatically be sent to your account in 5 minutes`,
+        title: `Your payout ${Number(
+          Number(amount) - Number(amount) * 0.069
+        )}SEND is sent to your wallet`,
         type: "completed",
       },
     };
   } else if (status == 2) {
-    //@todo: arpita send send(param:amount*2-fees) from squads to user
     return {
       type: "inline",
       action: {
         description: `Gambling is not about how well you play the games; it’s really about how well you handle your money`,
         icon: ogImageUrl,
         label: `Congratulations, ${cardStatus}`,
-        title: `Dealer had ${dealerCard.cards} (value: ${dealerValue}), Your payout will automatically be sent to your account`,
+        title: `Dealer had ${
+          dealerCard.cards
+        } (value: ${dealerValue}), Your payout ${Number(
+          Number(amount) * 2 - Number(amount) * 2 * 0.069
+        )}SEND is sent to your wallet`,
         type: "completed",
       },
     };
