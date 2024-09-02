@@ -268,7 +268,7 @@ export const endGame = (
         description: `The only sure thing about luck is that it will change.`,
         icon: ogImageUrl,
         label: `Sorry,You Lost`,
-        title: `Dealer has ${dealerCard} , Wanna play again?`,
+        title: `Dealer has ${dealerCard.card} , Wanna play again?`,
         type: "completed",
       },
     };
